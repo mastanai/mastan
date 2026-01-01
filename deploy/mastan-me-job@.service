@@ -1,0 +1,41 @@
+[Unit]
+Description=Mastan Me job %i (morning-set, consolidate, board-sync, backup, nightly)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=mastan
+Group=mastan
+WorkingDirectory=/opt/mastan-me
+EnvironmentFile=/etc/mastan-me/env
+EnvironmentFile=-/etc/mastan-me/board.env
+Environment=HOME=/var/lib/mastan/home
+Environment=TZ=Asia/Riyadh
+Environment=NODE_ENV=production
+Environment=NODE_OPTIONS=--max-old-space-size=384
+Environment=PATH=/opt/mastan-me/bin:/opt/mastan-me/runtime/node/bin:/usr/local/bin:/usr/bin:/bin
+# Same Telegram credential as mastan-me.service (morning-set sends through it).
+LoadCredential=telegram:/etc/mastan/telegram-token
+ExecStart=/opt/mastan-me/bin/mastan-me-job %i
+TimeoutStartSec=45min
+Nice=10
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/mastan-me /var/lib/mastan/home /var/backups/mastan-me
+InaccessiblePaths=-/var/lib/mastan/openclaw -/var/lib/mastan/workspace -/var/lib/mastan/state -/etc/mastan -/etc/mastan-fleet -/etc/mastan-content -/etc/mastan-mail -/var/lib/mastan-fleet -/var/lib/mastan-fleet-gate
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+MemoryHigh=1G
+MemoryMax=1536M
+TasksMax=128
+CPUQuota=150%
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=mastan-me-job

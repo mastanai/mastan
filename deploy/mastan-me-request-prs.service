@@ -1,0 +1,43 @@
+[Unit]
+Description=Mastan Me client requests as draft PRs (cards, triage, one draft, messages)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=mastan
+Group=mastan
+WorkingDirectory=/opt/mastan-me
+EnvironmentFile=/etc/mastan-me/env
+EnvironmentFile=-/etc/mastan-me/board.env
+Environment=HOME=/var/lib/mastan/home
+Environment=TZ=Asia/Riyadh
+Environment=NODE_ENV=production
+Environment=NODE_OPTIONS=--max-old-space-size=384
+Environment=PATH=/opt/mastan-me/bin:/opt/mastan-me/runtime/node/bin:/usr/local/bin:/usr/bin:/bin
+# Same Telegram credential as mastan-me.service (one message per outcome goes to Owner).
+LoadCredential=telegram:/etc/mastan/telegram-token
+ExecStart=/opt/mastan-me/bin/mastan-me-job request-prs
+# One author run (25 min) plus tests (10) and review (8) at most.
+TimeoutStartSec=55min
+Nice=10
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/mastan-me /var/lib/mastan/home /var/backups/mastan-me
+InaccessiblePaths=-/var/lib/mastan/openclaw -/var/lib/mastan/workspace -/var/lib/mastan/state -/etc/mastan -/etc/mastan-fleet -/etc/mastan-content -/etc/mastan-mail -/var/lib/mastan-fleet -/var/lib/mastan-fleet-gate
+# No ProtectKernelTunables: the tests run in bubblewrap with a fresh /proc, which the kernel refuses under an overmounted /proc
+# (same reason as mastan-me.service).
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+MemoryHigh=2G
+MemoryMax=2560M
+TasksMax=256
+CPUQuota=150%
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=mastan-me-request-prs

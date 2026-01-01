@@ -1,0 +1,52 @@
+[Unit]
+Description=Mastan Me (Owner's personal harness: Claude main agent, Codex coder, atlas, Telegram, web)
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=mastan
+Group=mastan
+WorkingDirectory=/opt/mastan-me
+EnvironmentFile=/etc/mastan-me/env
+EnvironmentFile=-/etc/mastan-me/board.env
+Environment=HOME=/var/lib/mastan/home
+Environment=TZ=Asia/Riyadh
+Environment=NODE_ENV=production
+Environment=NODE_OPTIONS=--max-old-space-size=384
+Environment=PATH=/opt/mastan-me/bin:/opt/mastan-me/runtime/node/bin:/usr/local/bin:/usr/bin:/bin
+# The @your_bot token is read in place from the Mastan app's file (no copy).
+LoadCredential=telegram:/etc/mastan/telegram-token
+# Smartsheet API token for the main agent's MCP (same token as the Team dashboard, copied once, root 0600).
+LoadCredential=smartsheet:/etc/mastan-me/smartsheet-token
+ExecStart=/opt/mastan-me/runtime/node/bin/node src/server.js
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=20
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/mastan-me /var/lib/mastan/home /var/backups/mastan-me
+# The agent runs tools as user mastan; keep it away from the other Mastan services' state and secrets.
+InaccessiblePaths=-/var/lib/mastan/openclaw -/var/lib/mastan/workspace -/var/lib/mastan/state -/etc/mastan -/etc/mastan-fleet -/etc/mastan-content -/etc/mastan-mail -/var/lib/mastan-fleet -/var/lib/mastan-fleet-gate
+# No ProtectKernelTunables: DeepSeek chats run claude inside bubblewrap with its own pid namespace and a fresh /proc,
+# which the kernel refuses under an overmounted /proc (probed 29 Oct). For a non-root service it protected nothing.
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+MemoryHigh=3072M
+MemoryMax=3584M
+TasksMax=256
+CPUQuota=200%
+LimitNOFILE=8192
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=mastan-me
+
+[Install]
+WantedBy=multi-user.target

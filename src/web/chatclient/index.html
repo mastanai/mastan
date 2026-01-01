@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
+<meta name="theme-color" content="#111514"><meta name="robots" content="noindex,nofollow"><meta name="description" content="Mastan Me">
+<meta name="csrf-token" content="__CSRF__">
+<link rel="icon" href="__ICON__"><link rel="apple-touch-icon" href="__ICON180__"><link rel="manifest" href="/static/chat/manifest.json">
+<title>Mastan Me</title>
+<script nonce="__NONCE__" src="__THEMEBOOT__"></script>
+<link rel="stylesheet" href="__CSS__"><script nonce="__NONCE__" src="__WEBAUTHN__"></script><script nonce="__NONCE__" type="module" src="__APP__"></script>
+<link rel="stylesheet" href="__SHELLCSS__"><link rel="stylesheet" href="__SKIN__"><script nonce="__NONCE__" src="__SHELLJS__" defer></script>
+</head>
+<body>
+<a class="skip" href="#message">Skip to message</a>
+__SHELL__
+<div id="app" class="booting trial-mode">
+<aside class="sidebar" aria-label="Sessions" hidden>
+  <div class="side-head"><button class="icon" id="settings" aria-label="Menu" title="Menu"></button><span class="brand">Mastan<span class="brand-dot"></span></span><button class="usage" id="usage" aria-label="Monthly allowance" hidden><span></span></button><button class="icon side-theme" id="side-theme-toggle" aria-label="Switch to dark mode" title="Switch to dark mode"></button><button class="icon" id="new-session" aria-label="New session" title="New session (Ctrl+Alt+N)" aria-keyshortcuts="Control+Alt+N Meta+Alt+N"></button></div>
+  <div class="search-wrap"><span id="search-icon"></span><input type="search" id="search" placeholder="Search sessions" aria-label="Search sessions" autocomplete="off"><kbd>⌘K</kbd></div>
+  <div id="notification-hint" role="group" aria-label="Notifications"></div><nav id="sessions" aria-label="Your sessions"></nav>
+  <div id="session-hints" role="group" aria-label="Device options"></div>
+</aside>
+<div class="list-dim" aria-hidden="true"></div>
+<main class="chat" id="chat">
+  <div class="channel-notice" id="whatsapp-down" role="status" hidden></div>
+  <div class="connection" role="status" hidden>Connecting...</div>
+  <header class="chat-head"><button class="icon back" id="back" aria-label="Back to sessions" hidden></button><img class="avatar" src="/static/mastan.png" alt="Mastan"><div class="chat-heading"><div class="chat-title" id="chat-title">Mastan</div><div class="subtle" id="chat-subtitle">Ready</div></div><span class="trial-label" id="trial-label" hidden></span><button class="icon" id="details" aria-label="Session details" hidden></button><button class="icon" id="chat-menu" aria-label="Session menu" hidden></button><button class="header-login" id="header-login">Log in</button><button class="icon" id="theme-toggle" aria-label="Switch to dark mode" title="Switch to dark mode"></button></header>
+  <div class="task-bar" id="task-bar" hidden></div>
+  <div class="timeline" id="timeline" tabindex="0" role="region" aria-label="Conversation"><div class="message-list" id="messages"></div></div>
+  <button class="jump icon" id="jump" aria-label="Go to latest messages" hidden><span>↓</span><b hidden>0</b></button>
+  <div class="composer-wrap" id="composer-wrap">
+    <div id="approvals" class="approvals"></div>
+    <div class="toasts" id="toasts" role="status"></div>
+    <div id="reply-tray" class="reply-tray" hidden></div><div id="file-tray" class="file-tray" hidden></div>
+    <div class="composer" id="composer" inert><button class="icon" id="attach" aria-label="Attach files" title="Images up to 20 MB, files up to 100 MB, audio up to 512 MB"></button><button class="icon" id="emoji" aria-label="Choose emoji"></button><textarea id="message" rows="1" placeholder="Message Mastan" aria-label="Message Mastan" autofocus autocomplete="off" maxlength="20000" dir="auto"></textarea><button class="icon send" id="send" aria-label="Record a voice note"></button><button class="icon stop" id="stop" aria-label="Stop reply" hidden></button></div>
+    <div class="composer-foot" id="composer-foot"></div>
+  </div>
+  <div class="drop-overlay" id="drop-overlay" hidden><span>+</span><b>Drop it here</b><p>Images, documents, or audio</p></div>
+</main>
+<aside class="details-pane" id="details-pane" aria-label="Session details" hidden></aside>
+</div>
+<div id="layers"></div><div class="sr" id="announcer" role="log" aria-live="polite" aria-relevant="additions"></div>
+<input type="file" id="file-input" multiple hidden accept="image/*,.xlsx,.xls,.xlsm,.csv,.tsv,.docx,.doc,.rtf,.odt,.ods,.odp,.pptx,.ppt,.txt,.md,.json,.pdf,.zip,.log"  aria-label="Choose attachments">
+</body></html>

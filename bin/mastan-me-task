@@ -1,0 +1,8 @@
+#!/bin/sh
+# Background work goes through the running service, using only this chat's credential.
+set -eu
+APP=/opt/mastan-me
+[ -d "$APP/src" ] || APP=$(cd "$(dirname "$0")/.." && pwd)
+NODE=/opt/mastan-me/runtime/node/bin/node
+[ -x "$NODE" ] || NODE=$(command -v node)
+exec "$NODE" "$APP/src/task-cli.js" "$@"

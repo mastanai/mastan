@@ -1,0 +1,21 @@
+# gitleaks configuration: the default rules plus an allowlist for invented test values.
+# Each entry names one file and the exact fake value, so a real key added anywhere else is still caught.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Invented keys in tests and an SSH key label"
+condition = "AND"
+regexTarget = "match"
+paths = [
+  '''(^|/)test/deepseek\.test\.js$''',
+  '''(^|/)test/client-billing\.test\.js$''',
+  '''(^|/)test/youtube\.test\.js$''',
+  '''(^|/)fleet-gate/client/audit-command\.py$''',
+]
+regexes = [
+  '''sk-test-deepseek-0123456789abcdef''',
+  '''rk_test_inventedBillingFixture''',
+  '''AIzaSyINVENTED-key_0123456789abcdefgh''',
+  '''mastan-ops-dev01''',
+]

@@ -1,0 +1,144 @@
+#!/usr/bin/python3 -I
+"""Root administration: status | trust-passkeys | add <name> <host> [client] [key] | own-key <name> | remove <name> | audit [n]."""
+import base64
+from collections import deque
+import fcntl
+import ipaddress
+import json
+import os
+from pathlib import Path
+import pwd
+import re
+import sqlite3
+import subprocess
+import sys
+import tempfile
+
+CONF = Path('/opt/mastan-fleet')
+TRUST = Path('/etc/mastan-fleet-gate/passkeys.json')
+STATE = Path('/var/lib/mastan-fleet-gate')
+NAME = re.compile(r'^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$')
+
+
+def trust_rows(db):
+    columns = {r[1] for r in db.execute('PRAGMA table_info(credentials)')}
+    # This harness has only Owner's credentials. Operator links never enter this table.
+    # Also handle an explicitly attributed table without ever trusting other users.
+    owner = next((c for c in ('user', 'user_id', 'username', 'owner', 'identity') if c in columns), None)
+    query = 'SELECT id,public_key,transports FROM credentials'
+    query += f' WHERE "{owner}"=?' if owner else " WHERE id!='operator'"
+    return [{'id': r[0], 'public_key_b64': base64.b64encode(r[1]).decode(), 'transports': json.loads(r[2])}
+            for r in db.execute(query, ('owner',) if owner else ())]
+
+
+def atomic(path, text, mode=0o644, group=0):
+    fd, name = tempfile.mkstemp(prefix='.' + path.name, dir=path.parent)
+    try:
+        os.fchmod(fd, mode); os.fchown(fd, 0, group)
+        with os.fdopen(fd, 'w') as stream:
+            stream.write(text); stream.flush(); os.fsync(stream.fileno())
+        os.replace(name, path)
+    finally:
+        if os.path.exists(name):
+            os.unlink(name)
+
+
+def add_server(name, host, client, scan=subprocess.run, key=None):
+    if not NAME.fullmatch(name) or not NAME.fullmatch(client) or key is not None and not NAME.fullmatch(key):
+        raise ValueError('bad name, client or key')
+    ipaddress.ip_address(host)
+    path = CONF / 'servers.json'
+    servers = json.loads(path.read_text())['servers']
+    current = next((s for s in servers if s['name'] == name), None)
+    if current and current['host'] != host:
+        raise ValueError('name already has a different host; remove it explicitly first')
+    known = CONF / 'known_hosts'
+    pins = known.read_text() if known.exists() else ''
+    pinned = any(line.split() and host in line.split()[0].split(',') for line in pins.splitlines())
+    if not pinned:
+        result = scan(['ssh-keyscan', '-T', '10', '-t', 'ed25519', host], capture_output=True, text=True, timeout=15)
+        lines = []
+        for line in result.stdout.splitlines():
+            parts = line.split()
+            if len(parts) == 3 and parts[0] == host and parts[1] == 'ssh-ed25519' and re.fullmatch(r'[A-Za-z0-9+/=]+', parts[2]):
+                lines.append(line)
+        if result.returncode or not lines:
+            raise ValueError('no ed25519 host key found; nothing added')
+        pin = '\n'.join(sorted(set(lines))) + '\n'
+        fingerprint = scan(['ssh-keygen', '-lf', '-'], input=pin, capture_output=True, text=True, timeout=10)
+        if fingerprint.returncode:
+            raise ValueError('host key fingerprint failed; nothing added')
+        print(fingerprint.stdout.strip())
+        atomic(known, pins.rstrip('\n') + ('\n' if pins else '') + pin)
+    else:
+        print(f'{name}: host already pinned (kept existing key)')
+    servers = [s for s in servers if s['name'] != name] + [{'name': name, 'host': host, 'client': client, **({'key': key} if key else {})}]
+    atomic(path, json.dumps({'servers': servers}, indent=2) + '\n')
+    print(f'{name}: added')
+
+
+def main():
+    if os.geteuid() != 0:
+        sys.exit('run as root')
+    args = sys.argv[1:] or ['status']
+    op = args[0]
+    if op == 'status' and len(args) == 1:
+        subprocess.run(['systemctl', 'status', 'mastan-fleet.socket', '--no-pager'], check=False)
+        for row in json.loads((CONF / 'servers.json').read_text())['servers']:
+            print(f'{row["name"]}: {row["host"]} ({row["client"]})')
+        keys = json.loads(TRUST.read_text()) if TRUST.exists() else []
+        print(f'trusted passkeys: {len(keys)}')
+        return
+    if op == 'audit' and len(args) <= 2:
+        n = int(args[1]) if len(args) == 2 else 20
+        if not 1 <= n <= 1000:
+            raise ValueError('n must be 1 to 1000')
+        path = STATE / 'audit.jsonl'
+        with path.open() as stream:
+            print(''.join(deque(stream, maxlen=n)), end='')
+        return
+    # Serialize root config changes. The gate sees only atomic, complete files.
+    with (CONF / '.admin.lock').open('a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        if op == 'trust-passkeys' and len(args) == 1:
+            path = Path('/var/lib/mastan-me/mastan-me.db')
+            if not path.exists():
+                path = Path('/var/lib/mastan-me/me.sqlite')
+            with sqlite3.connect(path.as_uri() + '?mode=ro', uri=True) as db:
+                rows = trust_rows(db)
+            atomic(TRUST, json.dumps(rows, indent=2) + '\n', 0o640, pwd.getpwnam('mastan-ops').pw_gid)
+            print(f'trusted {len(rows)} Owner passkeys: ' + ', '.join(r['id'][:8] for r in rows))
+        elif op == 'add' and len(args) in (3, 4, 5):
+            add_server(args[1], args[2], args[3] if len(args) >= 4 else args[1], key=args[4] if len(args) == 5 else None)
+        elif op == 'own-key' and len(args) == 2:
+            # One key per server: creates it once (private part stays with mastan-ops), prints the public part.
+            if not NAME.fullmatch(args[1]):
+                raise ValueError('bad name')
+            key = Path('/var/lib/mastan-ops/ssh') / f'{args[1]}_ed25519'
+            if not key.exists():
+                subprocess.run(['sudo', '-u', 'mastan-ops', 'ssh-keygen', '-q', '-t', 'ed25519', '-N', '', '-C', f'mastan-ops-{args[1]}', '-f', str(key)], check=True)
+            print(Path(str(key) + '.pub').read_text().strip())
+        elif op == 'remove' and len(args) == 2:
+            name = args[1]
+            if not NAME.fullmatch(name):
+                raise ValueError('bad name')
+            path = CONF / 'servers.json'
+            servers = json.loads(path.read_text())['servers']
+            removed = [s for s in servers if s['name'] == name]
+            remaining = [s for s in servers if s['name'] != name]
+            atomic(path, json.dumps({'servers': remaining}, indent=2) + '\n')
+            # Drop pins only if no remaining server uses that host.
+            hosts = {s['host'] for s in removed} - {s['host'] for s in remaining}
+            known = CONF / 'known_hosts'
+            lines = [line for line in known.read_text().splitlines() if not line.split() or not (set(line.split()[0].split(',')) & hosts)]
+            atomic(known, '\n'.join(lines) + ('\n' if lines else ''))
+            print(f'{name}: removed; client authorized_keys unchanged')
+        else:
+            sys.exit(__doc__)
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except (ValueError, OSError, sqlite3.Error, subprocess.SubprocessError):
+        sys.exit('fleet administration failed; check arguments, files and host key access')

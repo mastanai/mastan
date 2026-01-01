@@ -1,0 +1,87 @@
+#!/usr/bin/python3 -I
+"""mastan-gh-admin (root): manage the GitHub gate's token and look at what it did.
+
+  pbpaste | ssh dev-01 mastan-gh-admin set-token     store a token from stdin (never printed), check it
+  mastan-gh-admin status                                    token login and scopes, repos on the list
+  mastan-gh-admin audit [n]                                 last n writes (push, PRs, comments), default 20
+  mastan-gh-admin remove-token                              delete the token; the gate refuses everything after
+"""
+import json
+import os
+import pwd
+import sys
+import urllib.error
+import urllib.request
+
+TOKEN_FILE = '/etc/mastan-gh/token'
+CONF = '/opt/mastan-gh/repos.json'
+AUDIT = '/var/lib/mastan-gh/private/audit.jsonl'
+RISKY = {'delete_repo', 'admin:org', 'admin:repo_hook', 'admin:org_hook', 'admin:enterprise', 'admin:public_key',
+         'admin:gpg_key', 'site_admin', 'user', 'write:packages', 'delete:packages', 'codespace'}
+
+
+def check(tok):
+    req = urllib.request.Request('https://api.github.com/user', headers={
+        'Authorization': f'Bearer {tok}', 'Accept': 'application/vnd.github+json', 'User-Agent': 'mastan-gh-admin'})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return json.load(r)['login'], r.headers.get('X-OAuth-Scopes', '')
+    except urllib.error.HTTPError as e:
+        sys.exit(f'GitHub refused the token ({e.code}); nothing stored')
+
+
+def main():
+    if os.geteuid() != 0:
+        sys.exit('run as root')
+    cmd = sys.argv[1] if len(sys.argv) > 1 else 'status'
+    if cmd == 'set-token':
+        tok = sys.stdin.read().strip()
+        if not tok.startswith(('ghp_', 'github_pat_', 'gho_')) or len(tok) > 255 or any(c.isspace() for c in tok):
+            sys.exit('that does not look like a GitHub token (ghp_..., github_pat_... or gho_...); nothing stored')
+        login, scopes = check(tok)
+        u = pwd.getpwnam('mastan-gh')
+        tmp = TOKEN_FILE + '.new'
+        fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o400)
+        with os.fdopen(fd, 'w') as f:
+            f.write(tok + '\n')
+        os.chown(tmp, u.pw_uid, u.pw_gid)
+        os.replace(tmp, TOKEN_FILE)
+        print(f'stored. GitHub user: {login}. scopes: {scopes or "fine-grained (no classic scopes)"}')
+        risky = sorted(RISKY & {s.strip() for s in scopes.split(',')})
+        if risky:
+            print(f'warning: this token also has {", ".join(risky)}; the gate never uses them, but a repo-only token is safer')
+        if 'workflow' in scopes:
+            print('note: the token can change workflow files; the gate still refuses them')
+        return
+    if cmd == 'remove-token':
+        try:
+            os.unlink(TOKEN_FILE)
+            print('token removed')
+        except FileNotFoundError:
+            print('no token stored')
+        return
+    if cmd == 'status':
+        try:
+            with open(TOKEN_FILE) as f:
+                login, scopes = check(f.read().strip())
+            print(f'token: ok, GitHub user {login}, scopes: {scopes or "fine-grained"}')
+        except FileNotFoundError:
+            print('token: none (pbpaste | ssh dev-01 mastan-gh-admin set-token)')
+        with open(CONF) as f:
+            for r, p in json.load(f).get('repos', {}).items():
+                print(f'  {r}: {", ".join(p.get("write", [])) or "read only"}')
+        return
+    if cmd == 'audit':
+        n = int(sys.argv[2]) if len(sys.argv) > 2 else 20
+        try:
+            with open(AUDIT) as f:
+                lines = f.readlines()[-n:]
+        except FileNotFoundError:
+            lines = []
+        print(''.join(lines) or 'no writes yet')
+        return
+    sys.exit(__doc__)
+
+
+if __name__ == '__main__':
+    main()

@@ -1,0 +1,11 @@
+[Unit]
+Description=Mastan Me client requests as draft PRs, every 15 minutes (does nothing until enabled=on)
+
+[Timer]
+OnBootSec=5min
+OnCalendar=*:7/15
+AccuracySec=1min
+Unit=mastan-me-request-prs.service
+
+[Install]
+WantedBy=timers.target

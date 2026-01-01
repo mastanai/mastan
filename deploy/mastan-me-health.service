@@ -1,0 +1,26 @@
+[Unit]
+Description=Mastan Me health check (restarts mastan-me.service only, never other units)
+After=mastan-me.service
+
+[Service]
+Type=oneshot
+# Root so it can restart mastan-me.service. The run is recorded as user mastan (setpriv).
+User=root
+WorkingDirectory=/opt/mastan-me
+Environment=TZ=Asia/Riyadh
+Environment=MASTAN_ME_HEALTH_STATE=/run/mastan-me-health/state.json
+RuntimeDirectory=mastan-me-health
+RuntimeDirectoryMode=0700
+RuntimeDirectoryPreserve=yes
+ExecStart=/opt/mastan-me/bin/mastan-me-job health
+TimeoutStartSec=3min
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=mastan-me-health

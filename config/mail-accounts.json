@@ -1,0 +1,4 @@
+[
+  {"id":"hello","label":"Mastan","host":"mail.example.com","imapPort":993,"smtpPort":465,"certFile":"/etc/mastan-me/mail/hello.crt","keyFile":"/etc/mastan-me/mail/hello.key","addresses":[{"address":"hello@mastan.ai","name":"Mastan"},{"address":"privacy@example.com","name":"Mastan"},{"address":"postmaster@example.com","name":"Mastan"}],"alerts":true},
+  {"id":"archive","label":"Archive","host":"mail.example.com","imapPort":993,"smtpPort":465,"certFile":"/etc/mastan-me/mail/archive.crt","keyFile":"/etc/mastan-me/mail/archive.key","addresses":[{"address":"archive@example.com","name":"Archive"}],"alerts":false}
+]

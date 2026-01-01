@@ -1,0 +1,11 @@
+[Unit]
+Description=Mastan Me GitHub gate socket (group mastan may connect)
+
+[Socket]
+ListenStream=/run/mastan-gh.sock
+SocketUser=mastan-gh
+SocketGroup=mastan
+SocketMode=0660
+
+[Install]
+WantedBy=sockets.target

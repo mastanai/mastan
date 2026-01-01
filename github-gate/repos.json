@@ -1,0 +1,14 @@
+{
+  "repos": {
+    "your-org/mastan-me": {
+      "write": ["push", "pr", "comment", "issue"],
+      "note": "The harness itself. main stays the owner's; the agent proposes changes as draft PRs."
+    },
+    "your-org/*": {
+      "write": [],
+      "note": "Every other repo in the org: read only (mirror, PRs, issues)."
+    }
+  },
+  "protected_branches": ["main", "master", "gh-pages", "production", "release/*"],
+  "blocked_paths": [".github/workflows/", ".github/actions/"]
+}

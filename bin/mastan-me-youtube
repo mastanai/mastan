@@ -1,0 +1,17 @@
+#!/bin/sh
+# YouTube tool for the agent and for Owner: video, comments, channel, search, quota.
+# Runs as user mastan. Loads /etc/mastan-me/youtube.env (YOUTUBE_API_KEY) when the caller has no key in env
+# (the agent's child processes get a clean env on purpose; only this tool loads the YouTube key).
+set -eu
+APP=/opt/mastan-me
+[ -d "$APP/src" ] || APP=$(cd "$(dirname "$0")/.." && pwd)
+NODE=/opt/mastan-me/runtime/node/bin/node
+[ -x "$NODE" ] || NODE=$(command -v node)
+if [ "$(id -u)" = "0" ]; then
+  exec setpriv --reuid=mastan --regid=mastan --init-groups --reset-env \
+    env HOME=/var/lib/mastan/home TZ=Asia/Riyadh PATH=/opt/mastan-me/bin:/usr/local/bin:/usr/bin:/bin "$0" "$@"
+fi
+if [ -z "${YOUTUBE_API_KEY:-}" ]; then
+  if [ -r /etc/mastan-me/youtube.env ]; then set -a; . /etc/mastan-me/youtube.env; set +a; fi
+fi
+exec "$NODE" "$APP/src/youtube/cli.js" "$@"

@@ -1,0 +1,13 @@
+#!/bin/sh
+# Operator CLI. Runs as user mastan with the service env. Subcommands live in src/admin/*.js.
+set -eu
+APP=/opt/mastan-me
+[ -d "$APP/src" ] || APP=$(cd "$(dirname "$0")/.." && pwd)
+NODE=/opt/mastan-me/runtime/node/bin/node
+[ -x "$NODE" ] || NODE=$(command -v node)
+if [ "$(id -u)" = "0" ]; then
+  exec setpriv --reuid=mastan --regid=mastan --init-groups --reset-env \
+    env HOME=/var/lib/mastan/home TZ=Asia/Riyadh PATH=/usr/local/bin:/usr/bin:/bin \
+    sh -c 'set -a; . /etc/mastan-me/env; [ -r /etc/mastan-me/board.env ] && . /etc/mastan-me/board.env; set +a; exec "$0" "$@"' "$NODE" "$APP/src/admin/cli.js" "$@"
+fi
+exec "$NODE" "$APP/src/admin/cli.js" "$@"

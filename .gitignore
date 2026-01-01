@@ -1,0 +1,20 @@
+# Data never goes to GitHub (atlas, memory copies, transcripts, tokens)
+atlas-build/
+data/
+workspace-data/
+*.sqlite
+*.sqlite-*
+*.db
+*.jsonl
+.env
+env
+*.env
+secrets/
+backups/
+node_modules/
+*.log
+.DS_Store
+tmp/
+BRIEF.md
+bin/lib/keep_exact.local.txt
+briefs/*.log

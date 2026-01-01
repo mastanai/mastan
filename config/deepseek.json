@@ -1,0 +1,20 @@
+{
+  "base_url": "https://api.deepseek.com/anthropic",
+  "effort": "high",
+  "context_1m": true,
+  "auto_compact_window": 786432,
+  "subagent_model": "deepseek-flash",
+  "api_timeout_ms": 600000,
+  "no_images": ["deepseek-v4-pro"],
+  "hide_workspace": [
+    "projects/team-dashboard",
+    "projects/example-repo",
+    "skills/smartsheet",
+    "skills/team-dashboard",
+    "skills/example-repo",
+    "recipes/work-sheet-check.md",
+    "recipes/team-dashboard-change.md",
+    "tasks/2026-10-26-warehouse-pricing",
+    "atlas/conversations"
+  ]
+}

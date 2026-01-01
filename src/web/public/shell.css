@@ -1,0 +1,152 @@
+/* Workspace tokens. The header owns its colours even beside the shared chat client. */
+@layer workspace-tokens {
+:root, .topbar, .operator-banner {
+  --bg: #0c0f0e;
+  --bg-1: #111514;
+  --bg-2: #171c1a;
+  --line: #252c29;
+  --line-2: #36403b;
+  --ink: #d2d9d4;
+  --ink-2: #98a39c;
+  --ink-3: #86928a;
+  --accent: #8fc7a8;
+  --accent-dim: #1a2a23;
+  --ok: #8fc7a8;
+  --warn: #d9b26a;
+  --warn-dim: #2a2317;
+  --bad: #dd7f70;
+  --bad-dim: #2c1a17;
+  --info: #86aecb;
+  --info-dim: #17222a;
+  --s0: #86aecb; --s1: #d9b26a; --s2: #8fc7a8; --s3: #b896c0;
+  --s4: #d08a72; --s5: #a3b56e; --s6: #9a9ad0; --s7: #6fb3b3; --sx: #6b756f;
+  --shadow: 0 8px 24px #0008;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  --radius: 3px;
+  --gutter: 24px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --shell-h: calc(44px + var(--safe-top));
+  color-scheme: dark;
+}
+:root[data-theme="light"], [data-theme="light"] .topbar, [data-theme="light"] .operator-banner {
+  --bg: #eef0ec;
+  --bg-1: #f6f7f4;
+  --bg-2: #e4e7e1;
+  --line: #d3d8d1;
+  --line-2: #b6bfb6;
+  --ink: #1d2823;
+  --ink-2: #47544c;
+  --ink-3: #56635b;
+  --accent: #1f6a48;
+  --accent-dim: #d9e9df;
+  --ok: #1f6a48;
+  --warn: #7d5610;
+  --warn-dim: #f1e6cd;
+  --bad: #a93a2a;
+  --bad-dim: #f5ded9;
+  --info: #24597d;
+  --info-dim: #dbe7ef;
+  --s0: #2f6c96; --s1: #96690f; --s2: #2a7a55; --s3: #80568d;
+  --s4: #a9553a; --s5: #657a24; --s6: #5757a3; --s7: #24807f; --sx: #657068;
+  --shadow: 0 8px 24px #1d282326;
+  color-scheme: light;
+}
+}
+* { box-sizing: border-box; }
+html { height: 100%; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { margin: 0; }
+html:has(.topbar) { overflow: hidden; }
+body[data-page], .page-login {
+  background: var(--bg); color: var(--ink); font: 15px/1.5 var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+body[data-page] { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.skip { position: fixed; z-index: 100; top: 4px; left: var(--gutter); padding: 8px 12px; min-height: 44px; background: var(--bg-1); border: 1px solid var(--accent); color: var(--accent); font: 13px/1.5 var(--mono); transform: translateY(calc(-100% - 8px)); }
+.skip:focus { transform: none; }
+.sr-only { position: absolute; top: 0; left: 0; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+
+.topbar {
+  position: sticky; top: 0; z-index: 80; flex: none; height: var(--shell-h); min-height: var(--shell-h);
+  padding: var(--safe-top) var(--gutter) 0; border-bottom: 1px solid var(--line);
+  background: var(--bg-1); color: var(--ink); font: 11px/1.5 var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+.topbar-row { height: 43px; display: flex; align-items: center; gap: 12px; min-width: 0; }
+.topbar .brand {
+  display: inline-flex; align-items: center; flex: none; gap: 8px; margin: 0; min-height: 24px;
+  color: var(--ink); font: 600 13px/1 var(--mono); letter-spacing: 0; text-decoration: none;
+}
+.topbar .brand img { display: block; width: 22px; height: 22px; border-radius: 50%; object-fit: cover; }
+.topbar .shell-sheet { display: contents; }
+.topbar .nav { display: flex; flex: 1; min-width: 0; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+.topbar .nav::-webkit-scrollbar { display: none; }
+.topbar .nav a {
+  display: flex; align-items: center; min-height: 32px; padding: 0 6px 0 8px; flex: none;
+  font: inherit; text-transform: lowercase; color: var(--ink-2); border: 1px solid transparent;
+  border-radius: var(--radius); text-decoration: none; transition: none;
+}
+.topbar .brand:hover { background: var(--bg-2); box-shadow: inset 2px 0 0 var(--accent); }
+.topbar .brand:active { background: var(--bg); }
+.topbar .nav a[aria-current="page"] { color: var(--accent); background: var(--accent-dim); }
+.topbar .nav a[aria-current="page"]::before { color: inherit; }
+.topbar .nav a:hover { background: var(--bg-2); color: var(--ink); box-shadow: inset 2px 0 0 var(--accent); }
+.topbar .nav a:active { background: var(--bg-1); }
+.topbar .stats { display: flex; align-items: center; gap: 8px; flex: none; }
+.topbar .stat { display: inline-flex; gap: 4px; padding: 0; border: 0; border-radius: 0; background: none; font: inherit; color: var(--ink-2); white-space: nowrap; text-decoration: none; }
+.topbar a.stat { min-height: 24px; align-items: center; padding-left: 6px; }
+.topbar .stat::before { content: attr(data-label); }
+.topbar b { color: var(--ink); font-weight: 500; }
+.topbar .shell-clock { color: var(--ink-3); white-space: nowrap; }
+.topbar .shell-menu, .topbar .shell-close, .topbar .shell-theme {
+  appearance: none; min-height: 44px; padding: 0 12px; border: 1px solid var(--line-2);
+  border-radius: var(--radius); font: 13px/1 var(--mono); color: var(--ink); background: var(--bg-1);
+  cursor: pointer; touch-action: manipulation; transition: none; transform: none;
+}
+.topbar .shell-theme:hover, .topbar .shell-menu:hover, .topbar .shell-close:hover, .topbar .shell-question:hover, .topbar a.stat:hover { background: var(--bg-2); box-shadow: inset 2px 0 0 var(--accent); text-decoration: none; }
+.topbar .shell-theme:active, .topbar .shell-menu:active, .topbar .shell-close:active { background: var(--bg); }
+.topbar .shell-theme { min-height: 32px; font-size: 11px; }
+.topbar :focus:not(:focus-visible) { outline: none; }
+.topbar :focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.topbar .shell-current, .topbar .shell-question, .topbar .shell-menu, .topbar .shell-close { display: none; }
+.topbar .scanline { position: absolute; bottom: -1px; left: 0; width: 72px; height: 1px; background: var(--accent); opacity: 0; transition: opacity 200ms linear; pointer-events: none; }
+.topbar.scrolling .scanline { opacity: .9; transition: none; }
+.topbar .shell-scrim { position: fixed; inset: var(--shell-h) 0 0; width: 100%; height: auto; margin: 0; border: 0; border-radius: 0; background: var(--bg); opacity: .8; z-index: 1; cursor: pointer; transform: none; }
+.operator-banner { flex: none; margin: 0; padding: 8px var(--gutter); background: var(--warn-dim); border-bottom: 1px solid var(--line); color: var(--warn); font: 12px/1.5 var(--mono); }
+
+/* Twelve windows need the room: only the questions count stays until the header is wide enough. */
+@media (min-width: 900px) and (max-width: 1700px) {
+  .topbar .stat:not([data-stat="open_questions"]) { display: none; }
+}
+@media (max-width: 899px) {
+  :root, .topbar, .operator-banner { --gutter: 16px; }
+  .topbar-row { gap: 12px; }
+  .topbar .brand { min-width: 44px; min-height: 44px; padding: 11px 22px 11px 0; }
+  .topbar .brand span, .topbar .shell-clock { display: none; }
+  .topbar .shell-current { display: block; flex: 1; min-width: 0; font-size: 16px; font-weight: 600; }
+  .topbar .shell-question { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-width: 44px; min-height: 44px; color: var(--ink-2); text-decoration: none; }
+  .topbar .shell-menu { display: block; border-width: 0 0 0 1px; border-radius: 0; min-height: 44px; }
+  .topbar .shell-sheet {
+    display: none; position: fixed; z-index: 2; left: 0; right: 0; bottom: 0;
+    max-height: calc(100dvh - var(--shell-h) - 16px); overflow-y: auto; overscroll-behavior: contain;
+    padding: 12px 16px calc(16px + var(--safe-bottom)); background: var(--bg-1);
+    border: 1px solid var(--line-2); border-radius: var(--radius) var(--radius) 0 0; box-shadow: var(--shadow);
+    transform: none;
+  }
+  .topbar.sheet-open .shell-sheet { display: block; }
+  .topbar .shell-theme { min-height: 44px; min-width: 44px; margin: 12px 12px 0; font-size: 13px; }
+  .topbar .shell-close { display: block; margin: 0 0 8px auto; }
+  .topbar .nav { display: grid; grid-template-columns: 1fr 1fr; overflow: visible; gap: 4px; }
+  .topbar .nav a { min-height: 44px; padding: 0 12px; font-size: 13px; }
+  .topbar .stats { flex-wrap: wrap; padding: 16px 12px 0; gap: 12px 16px; border-top: 1px solid var(--line); margin-top: 12px; font-size: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .topbar .shell-sheet, .topbar.sheet-open .shell-sheet { transition: none; }
+  .topbar .scanline { display: none; }
+}
+
+/* Unread Inbox count on the mail tab. */
+.topbar .mail-unread { margin-left: 4px; font-size: 11px; color: var(--accent); }

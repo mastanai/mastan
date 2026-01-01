@@ -1,0 +1,10 @@
+#!/bin/sh
+# Hand a coding task to the coder role (Codex CLI, GPT-6.1 Sol by default).
+# Usage: mastan-me-coder <task-dir> <prompt-file>
+# Prints the coder's summary, the diff of the task dir and the log path.
+set -eu
+APP=/opt/mastan-me
+[ -d "$APP/src" ] || APP=$(cd "$(dirname "$0")/.." && pwd)
+NODE=/opt/mastan-me/runtime/node/bin/node
+[ -x "$NODE" ] || NODE=$(command -v node)
+exec "$NODE" "$APP/src/agent/coder-cli.js" "$@"

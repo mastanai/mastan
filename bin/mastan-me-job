@@ -1,0 +1,24 @@
+#!/bin/sh
+# Run one job by hand or from a systemd timer: morning-set, consolidate, board-sync, backup, health, nightly.
+# Usage: mastan-me-job <name> [--force]
+# Jobs run as user mastan. Only "health" keeps root (it may restart mastan-me.service and nothing else).
+set -eu
+APP=/opt/mastan-me
+[ -d "$APP/src" ] || APP=$(cd "$(dirname "$0")/.." && pwd)
+NODE=/opt/mastan-me/runtime/node/bin/node
+[ -x "$NODE" ] || NODE=$(command -v node)
+JOB=${1:-}
+if [ "$(id -u)" = "0" ] && [ "$JOB" != "health" ]; then
+  exec setpriv --reuid=mastan --regid=mastan --init-groups --reset-env \
+    env HOME=/var/lib/mastan/home TZ=Asia/Riyadh PATH=/opt/mastan-me/bin:/opt/mastan-me/runtime/node/bin:/usr/local/bin:/usr/bin:/bin \
+    sh -c 'set -a; [ -r /etc/mastan-me/env ] && . /etc/mastan-me/env; [ -r /etc/mastan-me/board.env ] && . /etc/mastan-me/board.env; set +a; exec "$0" "$@"' \
+    "$NODE" "$APP/src/jobs/run.js" "$@"
+fi
+if [ "$(id -u)" != "0" ] && [ -z "${INVOCATION_ID:-}" ]; then
+  # By hand as mastan (or from the agent): load the service env the way the unit does.
+  set -a
+  [ -r /etc/mastan-me/env ] && . /etc/mastan-me/env
+  [ -r /etc/mastan-me/board.env ] && . /etc/mastan-me/board.env
+  set +a
+fi
+exec "$NODE" "$APP/src/jobs/run.js" "$@"

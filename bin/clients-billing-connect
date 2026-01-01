@@ -1,0 +1,16 @@
+#!/usr/bin/env node
+// Run on the hub as the service user: clients-billing-connect "<client name>" <server>. Adds the client if absent, links the
+// server and prints that server's new token once, for piping straight into its credential file. A repeat replaces the token.
+import {openDb} from '../src/db.js';
+import {config} from '../src/config.js';
+import {createClientsStore} from '../src/clients/store.js';
+import {createBilling} from '../src/clients/billing.js';
+const [name, server] = process.argv.slice(2);
+if (!name || !server || process.argv.length !== 4) { console.error('Usage: clients-billing-connect "<client name>" <server>'); process.exit(2); }
+const db = openDb(), store = createClientsStore(db), matches = store.rows().filter(r => r.name === name);
+if (matches.length > 1) { console.error('More than one client has that name.'); process.exit(1); }
+const id = matches[0]?.id || store.save({name, tag: 'customer'});
+const token = createBilling({db, config}).connect(id, server);
+// The Server field gives the person their cost and margin. Never overwrite one set by hand.
+db.prepare("UPDATE clients SET server=? WHERE id=? AND coalesce(server,'')=''").run(server, id);
+process.stdout.write(token + '\n');

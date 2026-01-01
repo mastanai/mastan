@@ -1,0 +1,10 @@
+#!/usr/bin/env node
+// Run on the hub as the service user: capability-requests-connect <server> ["<client name>"]. Prints that server's new token once,
+// for piping straight into its credential file. A repeat replaces the token. This token only files requests.
+import {openDb} from '../src/db.js';
+import {config} from '../src/config.js';
+import {createCapabilityRequests} from '../src/clients/capability-requests.js';
+const [server, client] = process.argv.slice(2);
+if (!server || process.argv.length > 4) { console.error('Usage: capability-requests-connect <server> ["<client name>"]'); process.exit(2); }
+try { process.stdout.write(createCapabilityRequests({db: openDb(), config}).connect(server, client) + '\n'); }
+catch (error) { console.error(error.expose ? error.message : 'Could not connect that server.'); process.exit(1); }

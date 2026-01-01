@@ -1,0 +1,10 @@
+[Unit]
+Description=Mastan Me nightly consolidate then backup, 03:00 Riyadh
+
+[Timer]
+OnCalendar=*-*-* 03:00:00 Asia/Riyadh
+Persistent=true
+Unit=mastan-me-job@nightly.service
+
+[Install]
+WantedBy=timers.target

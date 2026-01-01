@@ -1,0 +1,8 @@
+#!/bin/sh
+# Schedules use the running service and this chat's credential, never a token file.
+set -eu
+APP=/opt/mastan-me
+[ -d "$APP/src" ] || APP=$(cd "$(dirname "$0")/.." && pwd)
+NODE=/opt/mastan-me/runtime/node/bin/node
+[ -x "$NODE" ] || NODE=$(command -v node)
+exec "$NODE" "$APP/src/schedule-cli.js" "$@"

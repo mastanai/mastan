@@ -1,0 +1,11 @@
+[Unit]
+Description=Mastan Me board sync every 10 minutes
+
+[Timer]
+OnBootSec=2min
+OnCalendar=*:0/10:15
+AccuracySec=30s
+Unit=mastan-me-job@board-sync.service
+
+[Install]
+WantedBy=timers.target

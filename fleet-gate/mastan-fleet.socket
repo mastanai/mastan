@@ -1,0 +1,12 @@
+[Unit]
+Description=Mastan Me fleet gate socket (group mastan may connect)
+
+[Socket]
+ListenStream=/run/mastan-fleet.sock
+SocketUser=mastan-ops
+SocketGroup=mastan
+SocketMode=0660
+RemoveOnStop=true
+
+[Install]
+WantedBy=sockets.target

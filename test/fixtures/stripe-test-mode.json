@@ -1,0 +1,374 @@
+{
+ "_note": "Shape captured from the Stripe sandbox with API version 2024-06-20 on 2026-11-05. Names, emails, ids and card data removed.",
+ "subscriptions": [
+  {
+   "status": "active",
+   "currency": "usd",
+   "created": 1793737802,
+   "start_date": 1793737802,
+   "current_period_start": 1793737802,
+   "current_period_end": 1796329802,
+   "cancel_at_period_end": false,
+   "cancel_at": null,
+   "canceled_at": null,
+   "ended_at": null,
+   "discount": null,
+   "livemode": false,
+   "id": "sub_fixture1",
+   "object": "subscription",
+   "customer": "cus_fixture1",
+   "metadata": {
+    "mastan_user_id": "user-fixture-1"
+   },
+   "latest_invoice": "in_fixture",
+   "items": {
+    "object": "list",
+    "data": [
+     {
+      "id": "si_fixture",
+      "quantity": 1,
+      "price": {
+       "currency": "usd",
+       "unit_amount": 3000,
+       "lookup_key": "pro_monthly",
+       "recurring": {
+        "aggregate_usage": null,
+        "interval": "month",
+        "interval_count": 1,
+        "meter": null,
+        "trial_period_days": null,
+        "usage_type": "licensed"
+       },
+       "nickname": "Pro monthly",
+       "id": "price_fixture"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "status": "incomplete_expired",
+   "currency": "usd",
+   "created": 1793340164,
+   "start_date": 1793340164,
+   "current_period_start": 1793340164,
+   "current_period_end": 1796018564,
+   "cancel_at_period_end": false,
+   "cancel_at": null,
+   "canceled_at": 1793422987,
+   "ended_at": 1793422987,
+   "discount": null,
+   "livemode": false,
+   "id": "sub_fixture2",
+   "object": "subscription",
+   "customer": "cus_fixture2",
+   "metadata": {
+    "mastan_user_id": "user-fixture-2"
+   },
+   "latest_invoice": "in_fixture",
+   "items": {
+    "object": "list",
+    "data": [
+     {
+      "id": "si_fixture",
+      "quantity": 1,
+      "price": {
+       "currency": "usd",
+       "unit_amount": 1000,
+       "lookup_key": "plus_monthly",
+       "recurring": {
+        "aggregate_usage": null,
+        "interval": "month",
+        "interval_count": 1,
+        "meter": null,
+        "trial_period_days": null,
+        "usage_type": "licensed"
+       },
+       "nickname": "Plus monthly",
+       "id": "price_fixture"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "status": "incomplete_expired",
+   "currency": "usd",
+   "created": 1793340151,
+   "start_date": 1793340151,
+   "current_period_start": 1793340151,
+   "current_period_end": 1796018551,
+   "cancel_at_period_end": false,
+   "cancel_at": null,
+   "canceled_at": 1793422987,
+   "ended_at": 1793422987,
+   "discount": null,
+   "livemode": false,
+   "id": "sub_fixture3",
+   "object": "subscription",
+   "customer": "cus_fixture3",
+   "metadata": {
+    "mastan_user_id": "user-fixture-3"
+   },
+   "latest_invoice": "in_fixture",
+   "items": {
+    "object": "list",
+    "data": [
+     {
+      "id": "si_fixture",
+      "quantity": 1,
+      "price": {
+       "currency": "usd",
+       "unit_amount": 1000,
+       "lookup_key": "plus_monthly",
+       "recurring": {
+        "aggregate_usage": null,
+        "interval": "month",
+        "interval_count": 1,
+        "meter": null,
+        "trial_period_days": null,
+        "usage_type": "licensed"
+       },
+       "nickname": "Plus monthly",
+       "id": "price_fixture"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "status": "active",
+   "currency": "usd",
+   "created": 1793340119,
+   "start_date": 1793340119,
+   "current_period_start": 1793340119,
+   "current_period_end": 1796018519,
+   "cancel_at_period_end": false,
+   "cancel_at": null,
+   "canceled_at": null,
+   "ended_at": null,
+   "discount": null,
+   "livemode": false,
+   "id": "sub_fixture4",
+   "object": "subscription",
+   "customer": "cus_fixture4",
+   "metadata": {
+    "mastan_user_id": "user-fixture-4"
+   },
+   "latest_invoice": "in_fixture",
+   "items": {
+    "object": "list",
+    "data": [
+     {
+      "id": "si_fixture",
+      "quantity": 1,
+      "price": {
+       "currency": "usd",
+       "unit_amount": 20000,
+       "lookup_key": "enterprise_monthly",
+       "recurring": {
+        "aggregate_usage": null,
+        "interval": "month",
+        "interval_count": 1,
+        "meter": null,
+        "trial_period_days": null,
+        "usage_type": "licensed"
+       },
+       "nickname": "Enterprise monthly",
+       "id": "price_fixture"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "status": "active",
+   "currency": "usd",
+   "created": 1793340112,
+   "start_date": 1793340112,
+   "current_period_start": 1793340112,
+   "current_period_end": 1796018512,
+   "cancel_at_period_end": false,
+   "cancel_at": null,
+   "canceled_at": null,
+   "ended_at": null,
+   "discount": null,
+   "livemode": false,
+   "id": "sub_fixture5",
+   "object": "subscription",
+   "customer": "cus_fixture5",
+   "metadata": {
+    "mastan_user_id": "user-fixture-5"
+   },
+   "latest_invoice": "in_fixture",
+   "items": {
+    "object": "list",
+    "data": [
+     {
+      "id": "si_fixture",
+      "quantity": 1,
+      "price": {
+       "currency": "usd",
+       "unit_amount": 10000,
+       "lookup_key": "private_monthly",
+       "recurring": {
+        "aggregate_usage": null,
+        "interval": "month",
+        "interval_count": 1,
+        "meter": null,
+        "trial_period_days": null,
+        "usage_type": "licensed"
+       },
+       "nickname": "Private monthly",
+       "id": "price_fixture"
+      }
+     }
+    ]
+   }
+  }
+ ],
+ "customers": [
+  {
+   "id": "cus_fixture1",
+   "object": "customer",
+   "name": "Fixture Person 1",
+   "email": "fixture1@example.invalid",
+   "phone": null,
+   "created": 1793737802,
+   "livemode": false,
+   "delinquent": false,
+   "metadata": {},
+   "address": {
+    "country": "SA"
+   }
+  },
+  {
+   "id": "cus_fixture2",
+   "object": "customer",
+   "name": "Fixture Person 2",
+   "email": "fixture2@example.invalid",
+   "phone": null,
+   "created": 1793340164,
+   "livemode": false,
+   "delinquent": true,
+   "metadata": {},
+   "address": {
+    "country": "US"
+   }
+  },
+  {
+   "id": "cus_fixture3",
+   "object": "customer",
+   "name": "Fixture Person 3",
+   "email": "fixture3@example.invalid",
+   "phone": null,
+   "created": 1793340151,
+   "livemode": false,
+   "delinquent": true,
+   "metadata": {},
+   "address": {
+    "country": "US"
+   }
+  },
+  {
+   "id": "cus_fixture4",
+   "object": "customer",
+   "name": "Fixture Person 4",
+   "email": "fixture4@example.invalid",
+   "phone": null,
+   "created": 1793340119,
+   "livemode": false,
+   "delinquent": false,
+   "metadata": {},
+   "address": {
+    "country": "US"
+   }
+  },
+  {
+   "id": "cus_fixture5",
+   "object": "customer",
+   "name": "Fixture Person 5",
+   "email": "fixture5@example.invalid",
+   "phone": null,
+   "created": 1793340112,
+   "livemode": false,
+   "delinquent": false,
+   "metadata": {},
+   "address": {
+    "country": "US"
+   }
+  }
+ ],
+ "charges": [
+  {
+   "id": "ch_fixture1",
+   "object": "charge",
+   "amount": 3000,
+   "amount_captured": 3000,
+   "amount_refunded": 0,
+   "currency": "usd",
+   "created": 1793737804,
+   "customer": "cus_fixture1",
+   "paid": true,
+   "refunded": false,
+   "status": "succeeded",
+   "livemode": false
+  },
+  {
+   "id": "ch_fixture2",
+   "object": "charge",
+   "amount": 1999,
+   "amount_captured": 1999,
+   "amount_refunded": 0,
+   "currency": "usd",
+   "created": 1793340829,
+   "customer": "cus_fixture6",
+   "paid": true,
+   "refunded": false,
+   "status": "succeeded",
+   "livemode": false
+  },
+  {
+   "id": "ch_fixture3",
+   "object": "charge",
+   "amount": 1000,
+   "amount_captured": 0,
+   "amount_refunded": 0,
+   "currency": "usd",
+   "created": 1793340218,
+   "customer": "cus_fixture7",
+   "paid": false,
+   "refunded": false,
+   "status": "failed",
+   "livemode": false
+  },
+  {
+   "id": "ch_fixture4",
+   "object": "charge",
+   "amount": 1000,
+   "amount_captured": 1000,
+   "amount_refunded": 0,
+   "currency": "usd",
+   "created": 1793340191,
+   "customer": "cus_fixture7",
+   "paid": true,
+   "refunded": false,
+   "status": "succeeded",
+   "livemode": false
+  },
+  {
+   "id": "ch_fixture5",
+   "object": "charge",
+   "amount": 1000,
+   "amount_captured": 0,
+   "amount_refunded": 0,
+   "currency": "usd",
+   "created": 1793340165,
+   "customer": "cus_fixture2",
+   "paid": false,
+   "refunded": false,
+   "status": "failed",
+   "livemode": false
+  }
+ ]
+}

@@ -1,0 +1,13 @@
+# Lets the bubblewrap that Codex ships create user namespaces on Ubuntu 24.04 (kernel.apparmor_restrict_unprivileged_userns=1),
+# so the coder role runs inside Codex's own sandbox instead of not at all. The same pattern Ubuntu uses for browsers:
+# one binary, unconfined, with userns allowed. Installed by deploy/enable-coder-sandbox.sh (Owner runs it, not the harness).
+# Remove: apparmor_parser -R /etc/apparmor.d/codex-bwrap && rm /etc/apparmor.d/codex-bwrap
+abi <abi/4.0>,
+include <tunables/global>
+
+profile codex-bwrap /opt/mastan-me/runtime/codex-vendor/codex-resources/bwrap flags=(unconfined) {
+  userns,
+
+  # Site-specific additions and overrides. See local/README for details.
+  include if exists <local/codex-bwrap>
+}

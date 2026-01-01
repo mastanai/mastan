@@ -1,0 +1,10 @@
+[Unit]
+Description=Mastan Me morning set to Telegram, 07:30 Riyadh
+
+[Timer]
+OnCalendar=*-*-* 07:30:00 Asia/Riyadh
+Persistent=true
+Unit=mastan-me-job@morning-set.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,32 @@
+[Unit]
+Description=Mastan Me GitHub gate (holds the GitHub token; the agent asks it to push branches and open draft PRs)
+Requires=mastan-gh.socket
+After=network-online.target
+
+[Service]
+Type=simple
+User=mastan-gh
+Group=mastan-gh
+ExecStart=/usr/bin/python3 -I /opt/mastan-gh/gate.py
+Environment=MASTAN_GH_CLIENTS=mastan
+Restart=on-failure
+RestartSec=3
+UMask=0027
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/mastan-gh
+# The gate needs only its token, its config and its own state.
+InaccessiblePaths=-/var/lib/mastan-me -/var/lib/mastan -/etc/mastan -/etc/mastan-me -/etc/mastan-fleet -/etc/mastan-content -/etc/mastan-mail -/var/lib/mastan-fleet -/var/lib/mastan-fleet-gate
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+MemoryMax=1G
+TasksMax=64
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=mastan-gh

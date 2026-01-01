@@ -1,0 +1,283 @@
+#!/usr/bin/python3 -I
+"""mastan-gh: the agent's way to GitHub, through the gate (no token here). Run inside a project clone.
+
+  mastan-gh status                              token, GitHub login, repos on the list
+  mastan-gh link <owner/repo>                   in a clone: remote "github" (read-only mirror) + commit identity
+  mastan-gh fetch                               refresh the mirror from GitHub, then git fetch github
+  mastan-gh push <local-branch> [--as <name>] [--force]
+                                                put a branch on GitHub (never main; force only on the gate's own branches)
+  mastan-gh pr list [--state open|closed|all]
+  mastan-gh pr view <n> | pr diff <n>
+  mastan-gh pr create --head <branch> [--base <b>] --title <t> --body-file <f>      always a draft
+  mastan-gh pr edit <n> [--title <t>] [--body-file <f>]
+  mastan-gh pr comment <n> --body-file <f>
+  mastan-gh issue list [--state ...] | issue view <n> | issue create --title <t> --body-file <f>
+  mastan-gh issue comment <n> --body-file <f>
+  mastan-gh api /repos/<owner>/<repo>/...      GET only, inside the repo
+  -R <owner/repo> picks the repo when not in a linked clone. --json prints the raw answer.
+"""
+import argparse
+import json
+import os
+import socket
+import subprocess
+import sys
+import tempfile
+
+SOCK = os.environ.get('MASTAN_GH_SOCKET', '/run/mastan-gh.sock')
+NO_PUSH = '/nonexistent/use-mastan-gh-push'
+
+
+def die(msg, code=1):
+    print(f'mastan-gh: {msg}', file=sys.stderr)
+    sys.exit(code)
+
+
+def call(req, bundle=None):
+    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    s.settimeout(960)
+    try:
+        s.connect(SOCK)
+    except OSError as e:
+        die(f'gate not reachable at {SOCK} ({e.strerror}); tell Owner: systemctl status mastan-gh.socket')
+    if bundle:
+        req['bundle_len'] = os.path.getsize(bundle)
+    s.sendall((json.dumps(req) + '\n').encode())
+    if bundle:
+        with open(bundle, 'rb') as f:
+            while chunk := f.read(1 << 20):
+                s.sendall(chunk)
+    data = b''
+    while not data.endswith(b'\n'):
+        chunk = s.recv(1 << 20)
+        if not chunk:
+            break
+        data += chunk
+    s.close()
+    if not data:
+        die('the gate closed the connection without an answer')
+    res = json.loads(data)
+    if not res.get('ok'):
+        die(res.get('error', 'refused'))
+    res.pop('ok')
+    return res
+
+
+def git(*args, check=True):
+    r = subprocess.run(['git', *args], capture_output=True, text=True)
+    if check and r.returncode != 0:
+        die(f'git {args[0]}: {r.stderr.strip()}')
+    return r.stdout.strip()
+
+
+def in_repo():
+    return subprocess.run(['git', 'rev-parse', '--git-dir'], capture_output=True).returncode == 0
+
+
+def repo_of(a):
+    if a.repo:
+        return a.repo
+    if in_repo():
+        r = git('config', '--get', 'mastan-gh.repo', check=False)
+        if r:
+            return r
+    die('no repo: run inside a linked clone (mastan-gh link <owner/repo>) or pass -R <owner/repo>')
+
+
+def read_body(path):
+    if path is None:
+        return None
+    if path == '-':
+        return sys.stdin.read()
+    with open(path) as f:
+        return f.read()
+
+
+def fetch(repo):
+    res = call({'op': 'sync', 'repo': repo})
+    if in_repo() and git('config', '--get', 'mastan-gh.repo', check=False) == repo:
+        git('fetch', '-q', '--prune', 'github')
+    return res
+
+
+def cmd_link(a):
+    if not in_repo():
+        die('run link inside the project clone')
+    repo = a.target
+    res = call({'op': 'sync', 'repo': repo})
+    mirror = res['mirror']
+    safe = git('config', '--global', '--get-all', 'safe.directory', check=False).splitlines()
+    if mirror not in safe:
+        git('config', '--global', '--add', 'safe.directory', mirror)
+    if git('remote', 'get-url', 'github', check=False):
+        git('remote', 'set-url', 'github', mirror)
+    else:
+        git('remote', 'add', 'github', mirror)
+    git('config', 'remote.github.fetch', '+refs/heads/*:refs/remotes/github/*')
+    git('config', 'remote.github.pushurl', NO_PUSH)
+    git('config', 'mastan-gh.repo', repo)
+    ident = res.get('identity') or {}
+    if ident.get('name') and ident.get('email'):
+        git('config', 'user.name', ident['name'])
+        git('config', 'user.email', ident['email'])
+    git('fetch', '-q', '--prune', 'github')
+    print(f'linked {repo}: remote github -> read-only mirror, default branch {res["default_branch"]}, '
+          f'write: {", ".join(res["write"]) or "read only"}')
+    if ident:
+        print(f'commit identity for this clone: {ident.get("name")} <{ident.get("email")}>')
+    print(git('branch', '-r', '--list', 'github/*'))
+
+
+def cmd_push(a):
+    repo = repo_of(a)
+    if git('config', '--get', 'mastan-gh.repo', check=False) != repo:
+        die(f'this clone is not linked to {repo}: mastan-gh link {repo}')
+    local = a.branch
+    sha = git('rev-parse', '--verify', '--quiet', f'refs/heads/{local}^{{commit}}', check=False)
+    if not sha:
+        die(f'no local branch {local}')
+    remote_name = a.as_ or (local[3:] if local.startswith('me/') else local)
+    fetch(repo)
+    with tempfile.TemporaryDirectory() as tmp:
+        bundle = os.path.join(tmp, 'push.bundle')
+        r = subprocess.run(['git', 'bundle', 'create', '-q', bundle, f'refs/heads/{local}', '--not', '--remotes=github'],
+                           capture_output=True, text=True)
+        if r.returncode != 0:
+            if 'empty bundle' not in r.stderr:
+                die(f'git bundle: {r.stderr.strip()}')
+            bundle = None
+        res = call({'op': 'push', 'repo': repo, 'branch': remote_name, 'sha': sha, 'force': a.force,
+                    'bundle_ref': f'refs/heads/{local}'}, bundle)
+    git('fetch', '-q', '--prune', 'github')
+    if res.get('note'):
+        print(f'{remote_name}: {res["note"]}')
+    else:
+        print(f'pushed {local} -> {repo} {remote_name} at {sha[:12]} ({res["new_commits"]} new commits'
+              f'{", was " + res["was"][:12] if res.get("was") else ", new branch"})')
+        print(res['url'])
+        print(f'compare: {res["compare"]}')
+
+
+def show(res, a, fmt):
+    if a.json:
+        print(json.dumps(res, indent=1))
+    else:
+        fmt(res)
+
+
+def fmt_prs(res):
+    for p in res['prs']:
+        print(f'#{p["number"]} {"[draft] " if p["draft"] else ""}{p["title"]}  ({p["head"]} -> {p["base"]}, '
+              f'{p["user"]}, {p["state"]}, {p["updated"][:10]})')
+    if not res['prs']:
+        print('no PRs')
+
+
+def fmt_pr(p):
+    print(f'#{p["number"]} {"[draft] " if p["draft"] else ""}{p["title"]}\n{p["url"]}')
+    print(f'{p["head"]} -> {p["base"]} by {p["user"]}, {p["state"]}, {p["commits"]} commits, '
+          f'+{p["additions"]}/-{p["deletions"]}, mergeable: {p["mergeable_state"]}, status: {p["status"]}')
+    for c in p['checks']:
+        print(f'  check {c["name"]}: {c["conclusion"] or c["status"]}')
+    print('\n' + (p['body'] or '(no description)').strip())
+    print('\nfiles:')
+    for f in p['files']:
+        print(f'  {f["status"][:1].upper()} {f["filename"]} +{f["additions"]}/-{f["deletions"]}')
+    for r in p['reviews']:
+        print(f'\nreview by {r["user"]}: {r["state"]}\n{r["body"]}'.rstrip())
+    for c in p['review_comments']:
+        print(f'\n{c["user"]} on {c["path"]}:{c["line"]}\n{c["body"]}')
+    for c in p['comments']:
+        print(f'\n{c["user"]} ({c["at"][:16]}):\n{c["body"]}')
+
+
+def fmt_issues(res):
+    for i in res['issues']:
+        print(f'#{i["number"]} {"[PR] " if i["pr"] else ""}{i["title"]}  ({i["user"]}, {i["state"]})')
+    if not res['issues']:
+        print('no issues')
+
+
+def fmt_issue(i):
+    print(f'#{i["number"]} {i["title"]} ({i["user"]}, {i["state"]})\n{i["url"]}\n\n{i["body"]}')
+    for c in i['comments']:
+        print(f'\n{c["user"]} ({c["at"][:16]}):\n{c["body"]}')
+
+
+def main():
+    ap = argparse.ArgumentParser(prog='mastan-gh', description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument('-R', dest='repo')
+    ap.add_argument('--json', action='store_true')
+    sub = ap.add_subparsers(dest='cmd', required=True)
+    sub.add_parser('status')
+    sp = sub.add_parser('link'); sp.add_argument('target')
+    sub.add_parser('fetch')
+    sp = sub.add_parser('push'); sp.add_argument('branch'); sp.add_argument('--as', dest='as_'); sp.add_argument('--force', action='store_true')
+    pr = sub.add_parser('pr').add_subparsers(dest='sub', required=True)
+    sp = pr.add_parser('list'); sp.add_argument('--state', default='open')
+    sp = pr.add_parser('view'); sp.add_argument('number', type=int)
+    sp = pr.add_parser('diff'); sp.add_argument('number', type=int)
+    sp = pr.add_parser('create'); sp.add_argument('--head', required=True); sp.add_argument('--base')
+    sp.add_argument('--title', required=True); sp.add_argument('--body-file', required=True)
+    sp = pr.add_parser('edit'); sp.add_argument('number', type=int); sp.add_argument('--title'); sp.add_argument('--body-file')
+    sp = pr.add_parser('comment'); sp.add_argument('number', type=int); sp.add_argument('--body-file', required=True)
+    iss = sub.add_parser('issue').add_subparsers(dest='sub', required=True)
+    sp = iss.add_parser('list'); sp.add_argument('--state', default='open')
+    sp = iss.add_parser('view'); sp.add_argument('number', type=int)
+    sp = iss.add_parser('create'); sp.add_argument('--title', required=True); sp.add_argument('--body-file', required=True)
+    sp = iss.add_parser('comment'); sp.add_argument('number', type=int); sp.add_argument('--body-file', required=True)
+    sp = sub.add_parser('api'); sp.add_argument('path')
+    a = ap.parse_args()
+
+    if a.cmd == 'status':
+        res = call({'op': 'status'})
+        if a.json:
+            return print(json.dumps(res, indent=1))
+        print(f'token: {res["token"]}' + (f' (GitHub user {res["login"]}, scopes: {res["scopes"] or "fine-grained"})' if res.get('login') else ''))
+        if res.get('detail'):
+            print(res['detail'])
+        for r, w in res['repos'].items():
+            print(f'  {r}: {", ".join(w) or "read only"}')
+        return
+    if a.cmd == 'link':
+        return cmd_link(a)
+    if a.cmd == 'push':
+        return cmd_push(a)
+    repo = repo_of(a)
+    if a.cmd == 'fetch':
+        res = fetch(repo)
+        return print(f'{repo}: {len(res["branches"])} branches, default {res["default_branch"]}')
+    if a.cmd == 'api':
+        return print(json.dumps(call({'op': 'api', 'repo': repo, 'path': a.path})['data'], indent=1))
+    if a.cmd == 'pr':
+        if a.sub == 'list':
+            return show(call({'op': 'pr-list', 'repo': repo, 'state': a.state}), a, fmt_prs)
+        if a.sub == 'view':
+            return show(call({'op': 'pr-view', 'repo': repo, 'number': a.number}), a, fmt_pr)
+        if a.sub == 'diff':
+            return print(call({'op': 'pr-diff', 'repo': repo, 'number': a.number})['diff'])
+        if a.sub == 'create':
+            res = call({'op': 'pr-create', 'repo': repo, 'head': a.head, 'base': a.base, 'title': a.title,
+                        'body': read_body(a.body_file)})
+            return print(f'draft PR #{res["number"]} opened: {res["url"]}')
+        if a.sub == 'edit':
+            res = call({'op': 'pr-edit', 'repo': repo, 'number': a.number, 'title': a.title, 'body': read_body(a.body_file)})
+            return print(f'PR #{res["number"]} updated: {res["url"]}')
+        if a.sub == 'comment':
+            res = call({'op': 'comment', 'repo': repo, 'number': a.number, 'body': read_body(a.body_file)})
+            return print(f'commented: {res["url"]}')
+    if a.cmd == 'issue':
+        if a.sub == 'list':
+            return show(call({'op': 'issue-list', 'repo': repo, 'state': a.state}), a, fmt_issues)
+        if a.sub == 'view':
+            return show(call({'op': 'issue-view', 'repo': repo, 'number': a.number}), a, fmt_issue)
+        if a.sub == 'create':
+            res = call({'op': 'issue-create', 'repo': repo, 'title': a.title, 'body': read_body(a.body_file)})
+            return print(f'issue #{res["number"]} opened: {res["url"]}')
+        if a.sub == 'comment':
+            res = call({'op': 'comment', 'repo': repo, 'number': a.number, 'body': read_body(a.body_file)})
+            return print(f'commented: {res["url"]}')
+
+
+if __name__ == '__main__':
+    main()

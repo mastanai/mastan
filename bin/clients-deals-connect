@@ -1,0 +1,9 @@
+#!/usr/bin/env node
+// Hub service user only. Prints the replacement public Mastan token once for piping into Canary.
+import {openDb} from '../src/db.js';
+import {config} from '../src/config.js';
+import {createDeals} from '../src/clients/deals.js';
+if (process.argv.length !== 2) { console.error('Usage: clients-deals-connect'); process.exit(2); }
+const db = openDb();
+process.stdout.write(createDeals({db, config}).connect() + '\n');
+db.close();

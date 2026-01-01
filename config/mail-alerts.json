@@ -1,0 +1,5 @@
+{
+  "senders": ["microsoft.com", "azure.com", "microsoftonline.com", "stripe.com", "hetzner.com", "google.com", "github.com", "apple.com"],
+  "mute": ["notifications@github.com", "calendar-notification@google.com", "drive-shares-dm-noreply@google.com", "comments-noreply@docs.google.com"],
+  "urgent_words": ["security", "sign-in", "signin", "sign in", "login", "password", "suspicious", "unauthorized", "unauthorised", "breach", "compromised", "verify", "verification", "two-factor", "2fa", "invoice", "payment", "billing", "charge", "refund", "overdue", "past due", "suspend", "suspended", "expire", "expires", "expiring", "failed", "action required", "action needed", "quota", "abuse", "terminate", "termination", "deprecat", "retire", "retirement"]
+}

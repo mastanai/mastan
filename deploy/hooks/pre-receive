@@ -1,0 +1,16 @@
+#!/bin/sh
+# Installed by bin/sync-project into /var/lib/mastan-me/git/<name>.git/hooks. main (or master) only moves when the
+# push carries the option from-mac (bin/sync-project passes -o from-mac). The agent pushes me/<slug> branches.
+while read -r old new ref; do
+  case "$ref" in
+    refs/heads/main|refs/heads/master)
+      ok=0; i=0
+      while [ "$i" -lt "${GIT_PUSH_OPTION_COUNT:-0}" ]; do
+        eval "v=\${GIT_PUSH_OPTION_$i}"
+        [ "$v" = from-mac ] && ok=1
+        i=$((i + 1))
+      done
+      if [ "$ok" != 1 ]; then echo "main is Owner's branch: push a me/<slug> branch and tell him" >&2; exit 1; fi ;;
+  esac
+done
+exit 0

@@ -196,10 +196,10 @@ ask_channel() {
   OWNER=${OWNER_TELEGRAM_ID:-$(env_get OWNER_TELEGRAM_ID)}
   WA_NUM=$(printf '%s' "${WHATSAPP_OWNER:-$(env_get WHATSAPP_ALLOW)}" | tr -cd '0-9')
   WA_NEW=0
-  if [ -z "$TOKEN" ] || [ -z "$OWNER" ]; then TOKEN=""; OWNER=""; fi
   if [ -n "$TOKEN" ] || [ -n "$WA_NUM" ]; then
     [ -n "$WA_NUM" ] && say "WhatsApp is already set up (Mastan answers +$WA_NUM)"
-    [ -n "$TOKEN" ] && say "Telegram is already set up (bot token kept, owner ID $OWNER)"
+    if [ -n "$TOKEN" ] && [ -n "$OWNER" ]; then say "Telegram is already set up (bot token kept, owner ID $OWNER)"
+    elif [ -n "$TOKEN" ]; then say "Your Telegram bot is saved but not linked yet. That comes at the end."; fi
     note "To add the other one later: 'sudo mastan-login whatsapp' or 'sudo mastan-login telegram'."
   elif [ "${MASTAN_SKIP_TELEGRAM:-0}" = 1 ] || ! have_tty; then
     say "Skipping the chat app for now"
@@ -220,7 +220,7 @@ ask_channel() {
   if [ -n "$TOKEN" ]; then valid_token "$TOKEN" || die "The bot token does not look right."; fi
   if [ -n "$OWNER" ]; then valid_id "$OWNER" || die "The Telegram ID must be only digits."; fi
   if [ -n "$WA_NUM" ]; then valid_phone "$WA_NUM" || die "The WhatsApp number must be 8 to 15 digits with the country code."; fi
-  if [ -z "$TOKEN" ] || [ -z "$OWNER" ]; then TOKEN=""; OWNER=""; fi
+  if [ -z "$TOKEN" ]; then OWNER=""; fi
 }
 
 ask_whatsapp() {
@@ -240,32 +240,29 @@ ask_whatsapp() {
 ask_telegram() {
   say "Telegram"
   note "Mastan talks to you through your own Telegram bot."
-  note "1. In Telegram, open @BotFather, send /newbot and follow the questions."
-  note "2. BotFather gives you a token. It looks like 123456789:ABCdef..."
-  note "3. Open @userinfobot in Telegram. It shows your ID, a number."
+  note "In Telegram, open @BotFather, send /newbot and follow the questions. It gives you a token."
   while :; do
     printf '\n    Paste your bot token (it stays hidden) and press Enter: ' >/dev/tty
     IFS= read -rs TOKEN </dev/tty || TOKEN=""
     printf '\n' >/dev/tty
     TOKEN=$(printf '%s' "$TOKEN" | tr -d '[:space:]')
-    [ -z "$TOKEN" ] && break
-    valid_token "$TOKEN" && break
-    note "That does not look like a bot token. Try again, or press Enter to skip."
+    if [ -z "$TOKEN" ]; then note "Skipped. Add it later with: sudo mastan-login telegram"; break; fi
+    if ! valid_token "$TOKEN"; then note "That does not look like a bot token. It looks like 123456789:ABCdef... Try again, or press Enter to skip."; continue; fi
+    case "$(token_check "$TOKEN")" in
+      bad) note "Telegram does not know this token. Copy it again from BotFather and paste it." ;;
+      *) break ;;
+    esac
   done
-  if [ -n "$TOKEN" ]; then
-    while :; do
-      printf '    Paste your Telegram ID (a number) and press Enter: ' >/dev/tty
-      IFS= read -r OWNER </dev/tty || OWNER=""
-      OWNER=$(printf '%s' "$OWNER" | tr -d '[:space:]')
-      valid_id "$OWNER" && break
-      note "Your ID is only digits, for example 123456789. Try again."
-    done
-  else
-    OWNER=""
-    note "Skipped. Add it later with: sudo mastan-login telegram"
-  fi
+  OWNER=""
+  [ -z "$TOKEN" ] || note "Saved. You link the bot to yourself with a short code at the end of the install."
 }
 
+# good | bad | unknown (no network). The token goes to curl on stdin, not on the command line.
+token_check() {
+  local out
+  out=$(printf 'url = "https://api.telegram.org/bot%s/getMe"\n' "$1" | curl -sS -m 15 -K - 2>/dev/null) || { echo unknown; return; }
+  case "$out" in *'"ok":true'*) echo good ;; *'"error_code":401'*|*'"error_code":404'*) echo bad ;; *) echo unknown ;; esac
+}
 valid_token() { printf '%s' "$1" | grep -Eq '^[0-9]{5,}:[A-Za-z0-9_-]{30,}$'; }
 valid_id()    { printf '%s' "$1" | grep -Eq '^[0-9]{3,}$'; }
 
@@ -286,10 +283,8 @@ write_env() {
     echo "CLAUDE_BIN=$NODE_DIR/bin/claude"
     echo "CODEX_BIN=$NODE_DIR/bin/codex"
     echo "CODEX_HOME_FOR_CODER=$AGENT_HOME/.codex"
-    if [ -n "$TOKEN" ]; then
-      echo "TELEGRAM_BOT_TOKEN=$TOKEN"
-      echo "OWNER_TELEGRAM_ID=$OWNER"
-    fi
+    [ -z "$TOKEN" ] || echo "TELEGRAM_BOT_TOKEN=$TOKEN"
+    [ -z "$OWNER" ] || echo "OWNER_TELEGRAM_ID=$OWNER"
     echo "MASTAN_ME_BWRAP=$BWRAP"
     echo "MASTAN_ME_MAIN_SANDBOX=$SANDBOX"
     echo "MASTAN_ME_MAIL_ALERTS=off"
@@ -447,6 +442,54 @@ whatsapp() {
   echo "No scan after 5 minutes. Run 'sudo mastan-login whatsapp' to try again."; return 1
 }
 
+tg() { TG_TOKEN="\$tok" TG_CODE="\${code:-}" "\$B/node" $APP/deploy/telegram-pair.js "\$@" 2>/dev/null | tail -n1; }
+
+telegram() {
+  tok=\$(sed -n 's/^TELEGRAM_BOT_TOKEN=//p' "\$ENVF" | tail -n1)
+  owner=\$(sed -n 's/^OWNER_TELEGRAM_ID=//p' "\$ENVF" | tail -n1)
+  # A saved bot that is not linked yet is reused. Otherwise ask for a (new) bot token.
+  if [ -z "\$tok" ] || [ -n "\$owner" ]; then
+    tok=""
+    echo "In Telegram, open @BotFather, send /newbot and follow the questions. It gives you a token."
+    while :; do
+      printf 'Paste your bot token (it stays hidden) and press Enter: '
+      stty -echo </dev/tty 2>/dev/null || true; IFS= read -r tok </dev/tty || tok=""; stty echo </dev/tty 2>/dev/null || true; echo
+      tok=\$(printf '%s' "\$tok" | tr -d '[:space:]')
+      if ! printf '%s' "\$tok" | grep -Eq '^[0-9]{5,}:[A-Za-z0-9_-]{30,}\$'; then
+        echo "That does not look like a bot token. It looks like 123456789:ABCdef... Try again."; continue
+      fi
+      case "\$(tg check)" in
+        OK*) break ;;
+        BADTOKEN) echo "Telegram does not know this token. Copy it again from BotFather and paste it." ;;
+        *) echo "Could not reach Telegram to check the token. Check the internet connection and try again." ;;
+      esac
+    done
+  fi
+  # First link: save the bot now so a later run can reuse it. Changing bots: save only once linked.
+  stopped=0
+  if [ -n "\$owner" ]; then systemctl stop $SVC; stopped=1; else set_env TELEGRAM_BOT_TOKEN "\$tok"; fi
+  code=\$(od -An -N4 -tu4 /dev/urandom | tr -cd '0-9'); code=\$(printf '%06d' \$((code % 1000000)))
+  bot=\$(tg check); bot=\${bot#OK }
+  echo
+  echo "Open your new bot @\$bot in Telegram, press Start, and send it this code: \$code"
+  echo "Waiting for the code (up to 10 minutes)..."
+  out=\$(tg pair "\${MASTAN_PAIR_SECONDS:-600}")
+  case "\$out" in
+    LINKED*)
+      rest=\${out#LINKED }; id=\${rest%% *}; name=\${rest#* }
+      set_env TELEGRAM_BOT_TOKEN "\$tok"; set_env OWNER_TELEGRAM_ID "\$id"
+      systemctl restart $SVC
+      echo "Linked to \$name. Mastan answers only you in this bot."
+      if [ ! -s $AGENT_HOME/.claude/.credentials.json ]; then echo "Next, connect Claude:  sudo mastan-login claude"; fi
+      return 0 ;;
+    TIMEOUT) echo "No code arrived in 10 minutes. Run  sudo mastan-login telegram  again." ;;
+    CONFLICT) echo "Something else is reading this bot's messages. Stop it, then run  sudo mastan-login telegram  again." ;;
+    *) echo "Could not reach Telegram. Run  sudo mastan-login telegram  again." ;;
+  esac
+  [ \$stopped = 0 ] || systemctl start $SVC
+  return 1
+}
+
 case "\${1:-}" in
   claude)
     echo "Sign in with your own Claude account. Open the link it shows, approve, and paste the code back here if asked."
@@ -459,19 +502,7 @@ case "\${1:-}" in
   whatsapp)
     shift; whatsapp "\$@"; exit \$? ;;
   telegram)
-    echo "In Telegram: @BotFather, send /newbot, copy the token. Then @userinfobot shows your ID."
-    tok=""; while ! printf '%s' "\$tok" | grep -Eq '^[0-9]{5,}:[A-Za-z0-9_-]{30,}\$'; do
-      printf 'Paste your bot token (it stays hidden) and press Enter: '
-      stty -echo </dev/tty 2>/dev/null || true; IFS= read -r tok </dev/tty || tok=""; stty echo </dev/tty 2>/dev/null || true; echo
-      tok=\$(printf '%s' "\$tok" | tr -d '[:space:]')
-      printf '%s' "\$tok" | grep -Eq '^[0-9]{5,}:[A-Za-z0-9_-]{30,}\$' || echo "That does not look like a bot token. It looks like 123456789:ABCdef... Try again."
-    done
-    id=""; while ! printf '%s' "\$id" | grep -Eq '^[0-9]{3,}\$'; do
-      printf 'Paste your Telegram ID (a number) and press Enter: '; IFS= read -r id </dev/tty || id=""
-      id=\$(printf '%s' "\$id" | tr -d '[:space:]')
-    done
-    set_env TELEGRAM_BOT_TOKEN "\$tok"; set_env OWNER_TELEGRAM_ID "\$id"
-    echo "Saved. Open your bot in Telegram and say hello." ;;
+    shift; telegram "\$@"; exit \$? ;;
   status)
     as_mastan "\$B/claude" auth status 2>/dev/null || echo "Claude: run 'mastan-login claude' if Mastan does not answer."
     as_mastan "\$B/codex" login status 2>/dev/null || echo "Codex: not signed in."
@@ -518,6 +549,14 @@ link_whatsapp() {
   /usr/local/bin/mastan-login whatsapp "$WA_NUM" </dev/tty || true
 }
 
+# Telegram: the owner sends a one-time code to the new bot; no other bot is involved.
+link_telegram() {
+  [ -n "$TOKEN" ] && [ -z "$OWNER" ] && have_tty || return 0
+  say "Linking your Telegram bot"
+  /usr/local/bin/mastan-login telegram </dev/tty || true
+  OWNER=$(env_get OWNER_TELEGRAM_ID)
+}
+
 next_steps() {
   printf '\n============================================================\n'
   printf ' Mastan is installed.\n'
@@ -531,6 +570,9 @@ next_steps() {
   fi
   if [ -n "$WA_NUM" ] && ! wa_linked; then
     printf '\n %s. Link Mastan'"'"'s own WhatsApp number. Paste this:\n\n      sudo mastan-login whatsapp\n' "$n"; n=$((n + 1))
+  fi
+  if [ -n "$TOKEN" ] && [ -z "$OWNER" ]; then
+    printf '\n %s. Link your Telegram bot to yourself. Paste this:\n\n      sudo mastan-login telegram\n' "$n"; n=$((n + 1))
   elif [ -z "$WA_NUM" ] && [ -z "$TOKEN" ]; then
     printf '\n %s. Pick where you talk to Mastan. Paste one of these:\n\n      sudo mastan-login whatsapp\n      sudo mastan-login telegram\n' "$n"; n=$((n + 1))
   fi
@@ -565,6 +607,7 @@ main() {
   STEP=init_workspace; init_workspace
   STEP=start_service; start_service
   STEP=link_whatsapp; link_whatsapp
+  STEP=link_telegram; link_telegram
   STEP=next_steps; next_steps
 }
 

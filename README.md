@@ -65,7 +65,6 @@ The installer's first question is:
 1. In Telegram, open a chat with **@BotFather**.
 2. Send `/newbot` and follow the questions. Pick any name you like.
 3. BotFather gives you a long code called a **token**. Keep it. It is the key to your bot, so do not share it.
-4. Open a chat with **@userinfobot**. It tells you your **ID**, a number. Keep it too. It makes sure your Mastan answers only you.
 
 ## Step 1: Install Mastan
 
@@ -78,7 +77,7 @@ curl -fsSL https://raw.githubusercontent.com/mastanai/mastan/main/install.sh | s
 Type **1** for WhatsApp or **2** for Telegram.
 
 - **WhatsApp:** it asks for your normal WhatsApp number with the country code. The install then runs for about three minutes. At the end it shows a square code. On the phone with Mastan's number, open WhatsApp, go to **Settings > Linked devices > Link a device**, and scan it, the same as logging in to WhatsApp Web. When it says "Linked", go to step 2.
-- **Telegram:** paste the token (it stays hidden) and your ID from above. The install then runs for about three minutes.
+- **Telegram:** paste the token (it stays hidden). The install then runs for about three minutes. At the end it says "Open your new bot @yourbot in Telegram, press Start, and send it this code:" with a 6-digit code. Do that. When it says "Linked to" and your name, your bot answers only you. Go to step 2.
 
 Running it again is safe. It updates Mastan, keeps your settings and does not ask again.
 

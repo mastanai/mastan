@@ -10,7 +10,7 @@
 #
 # Unattended use: set TELEGRAM_BOT_TOKEN and OWNER_TELEGRAM_ID in the environment first,
 # or MASTAN_SKIP_TELEGRAM=1 to set Telegram up later.
-set -euo pipefail
+set -Eeuo pipefail
 
 REPO_URL=${MASTAN_REPO:-https://github.com/mastanai/mastan.git}
 BRANCH=${MASTAN_BRANCH:-main}
@@ -63,8 +63,8 @@ check_system() {
 install_packages() {
   say "Installing system packages (git, bubblewrap, curl)"
   export DEBIAN_FRONTEND=noninteractive
-  apt-get update -qq
-  apt-get install -y -qq ca-certificates curl git bubblewrap openssl xz-utils util-linux >/dev/null
+  apt-get -o DPkg::Lock::Timeout=300 update -qq
+  apt-get -o DPkg::Lock::Timeout=300 install -y -qq ca-certificates curl git bubblewrap openssl xz-utils util-linux >/dev/null
 }
 
 install_node() {
@@ -124,6 +124,7 @@ get_code() {
     shopt -u dotglob
     rm -rf "$tmp"
   fi
+  git -C "$APP" config core.fileMode false
   chown -R root:root "$APP"
   chmod -R u=rwX,go=rX "$APP"
   chmod 755 "$APP"/bin/*
@@ -289,6 +290,7 @@ Group=$USR
 WorkingDirectory=$APP
 EnvironmentFile=$ENVF
 Environment=HOME=$AGENT_HOME
+Environment=TZ=Asia/Riyadh
 Environment=NODE_ENV=production
 Environment=PATH=$APP/bin:$NODE_DIR/bin:/usr/local/bin:/usr/bin:/bin
 ExecStart=$NODE_DIR/bin/node src/server.js
@@ -329,7 +331,7 @@ write_login_helper() {
 set -eu
 [ "\$(id -u)" = 0 ] || { echo "Run it as root: sudo mastan-login \${1:-claude}"; exit 1; }
 B=$NODE_DIR/bin
-as_mastan() { runuser -u $USR -- env HOME=$AGENT_HOME CODEX_HOME=$AGENT_HOME/.codex PATH=\$B:/usr/local/bin:/usr/bin:/bin "\$@"; }
+as_mastan() { cd $AGENT_HOME && runuser -u $USR -- env HOME=$AGENT_HOME CODEX_HOME=$AGENT_HOME/.codex PATH=\$B:/usr/local/bin:/usr/bin:/bin "\$@"; }
 case "\${1:-}" in
   claude)
     echo "Sign in with your own Claude account. Open the link it shows, approve, and paste the code back here if asked."
@@ -341,7 +343,8 @@ case "\${1:-}" in
     else as_mastan "\$B/codex" login; fi ;;
   status)
     as_mastan "\$B/claude" auth status 2>/dev/null || echo "Claude: run 'mastan-login claude' if Mastan does not answer."
-    as_mastan "\$B/codex" login status 2>/dev/null || echo "Codex: not signed in." ;;
+    as_mastan "\$B/codex" login status 2>/dev/null || echo "Codex: not signed in."
+    exit 0 ;;
   *) echo "Usage: mastan-login claude | codex | status"; exit 1 ;;
 esac
 systemctl restart $SVC 2>/dev/null || true
@@ -394,20 +397,24 @@ next_steps() {
   printf '\n Problems? See what Mastan is doing:  journalctl -u %s -f\n\n' "$SVC"
 }
 
+STEP=start
+on_error() { printf '\nSTOP: something failed during "%s". Nothing is broken; fix the cause above and run the installer again.\n' "$STEP" >&2; }
+
 main() {
-  check_system
-  ask_telegram
-  install_packages
-  create_user
-  get_code
-  install_node
-  install_node_packages
-  setup_sandbox
-  write_env
-  write_service
-  init_workspace
-  start_service
-  next_steps
+  trap on_error ERR
+  STEP=check_system; check_system
+  STEP=ask_telegram; ask_telegram
+  STEP=install_packages; install_packages
+  STEP=create_user; create_user
+  STEP=get_code; get_code
+  STEP=install_node; install_node
+  STEP=install_node_packages; install_node_packages
+  STEP=setup_sandbox; setup_sandbox
+  STEP=write_env; write_env
+  STEP=write_service; write_service
+  STEP=init_workspace; init_workspace
+  STEP=start_service; start_service
+  STEP=next_steps; next_steps
 }
 
 main "$@"

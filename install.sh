@@ -62,7 +62,7 @@ check_system() {
 
 install_packages() {
   say "Installing system packages (git, bubblewrap, curl)"
-  export DEBIAN_FRONTEND=noninteractive
+  export DEBIAN_FRONTEND=noninteractive NEEDRESTART_SUSPEND=1
   apt-get -o DPkg::Lock::Timeout=300 update -qq
   apt-get -o DPkg::Lock::Timeout=300 install -y -qq ca-certificates curl git bubblewrap openssl xz-utils util-linux >/dev/null
 }
@@ -100,7 +100,7 @@ create_user() {
   if ! getent passwd "$USR" >/dev/null; then
     useradd --system --user-group --home-dir "$AGENT_HOME" --shell /bin/bash "$USR"
   fi
-  install -d -o "$USR" -g "$USR" -m 0700 "$AGENT_HOME" "$DATA" "$BACKUPS"
+  install -d -o "$USR" -g "$USR" -m 0700 "$AGENT_HOME" "$AGENT_HOME/.codex" "$AGENT_HOME/.claude" "$DATA" "$BACKUPS"
   install -d -o root -g "$USR" -m 0750 "$ETC"
 }
 
@@ -133,6 +133,7 @@ get_code() {
 install_node_packages() {
   say "Installing Mastan's parts, the Claude Code CLI and the Codex CLI (a few minutes)"
   export PATH="$NODE_DIR/bin:$PATH"
+  export NPM_CONFIG_UPDATE_NOTIFIER=false
   (cd "$APP" && npm ci --omit=dev --no-audit --no-fund --loglevel=error >/dev/null)
   npm install -g --no-audit --no-fund --loglevel=error @anthropic-ai/claude-code @openai/codex >/dev/null
   [ -x "$NODE_DIR/bin/claude" ] || die "The Claude Code CLI did not install."

@@ -64,12 +64,12 @@ install_packages() {
   say "Installing system packages (git, bubblewrap, curl)"
   export DEBIAN_FRONTEND=noninteractive NEEDRESTART_SUSPEND=1
   apt-get -o DPkg::Lock::Timeout=300 update -qq
-  apt-get -o DPkg::Lock::Timeout=300 install -y -qq ca-certificates curl git bubblewrap openssl xz-utils util-linux >/dev/null
+  apt-get -o DPkg::Lock::Timeout=300 install -y -qq ca-certificates curl git bubblewrap openssl xz-utils util-linux libatomic1 >/dev/null
 }
 
 install_node() {
   local have=""
-  [ -x "$NODE_DIR/bin/node" ] && have=$("$NODE_DIR/bin/node" -v | sed 's/^v//')
+  [ -x "$NODE_DIR/bin/node" ] && have=$("$NODE_DIR/bin/node" -v 2>/dev/null | sed 's/^v//' || true)
   if [ -n "$have" ] && version_ge "$have" "$NODE_MIN"; then
     say "Node.js $have is already installed"
     return
@@ -393,7 +393,7 @@ next_steps() {
 }
 
 STEP=start
-on_error() { printf '\nSTOP: something failed during "%s". Nothing is broken; fix the cause above and run the installer again.\n' "$STEP" >&2; }
+on_error() { [ "$BASH_SUBSHELL" = 0 ] || return 0; printf '\nSTOP: something failed during "%s". Nothing is broken; fix the cause above and run the installer again.\n' "$STEP" >&2; }
 
 main() {
   trap on_error ERR

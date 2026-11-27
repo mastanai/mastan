@@ -26,65 +26,68 @@ So there are two ways to get your own Mastan:
 ## What you need
 
 1. **A server.** A small Linux server from any provider. About 5 euros a month is enough.
-2. **An AI subscription of your own.** A Claude subscription. Mastan uses your subscription to think. Without it, Mastan has no brain.
+2. **An AI subscription of your own.** A Claude subscription. Mastan uses your subscription to think. Without it, Mastan has no brain. A ChatGPT subscription is optional: with it, Mastan hands coding jobs to Codex.
 3. **Telegram** on your phone. This is where you will talk to your Mastan.
 
 You pay for the server and the subscription yourself, in two different places. Mastan itself costs nothing.
 
-## Step 1: Download the code
+Pick **Ubuntu 24.04 or newer** when you rent the server. 4 GB of memory is enough.
 
-On your server, copy this line, paste it and press Enter:
+## Step 1: Create your Telegram bot
 
-```sh
-git clone https://github.com/mastanai/mastan.git /opt/mastan-me
-```
-
-No server yet and you only want to look? Press the green **Code** button at the top of this page, then **Download ZIP**.
-
-## Step 2: Create your Telegram bot
+Do this first, on your phone. You will paste the two results in step 2.
 
 1. In Telegram, open a chat with **@BotFather**.
 2. Send `/newbot` and follow the questions. Pick any name you like.
 3. BotFather gives you a long code called a **token**. Keep it. It is the key to your bot, so do not share it.
 4. Open a chat with **@userinfobot**. It tells you your **ID**, a number. Keep it too. It makes sure your Mastan answers only you.
 
+## Step 2: Install Mastan
+
+Log in to your server. Copy this one line, paste it and press Enter:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/mastanai/mastan/main/install.sh | sudo bash
+```
+
+It takes about three minutes. It asks for the token and the ID from step 1. The token stays hidden while you paste it.
+
+Running it again is safe. It updates Mastan and keeps your settings.
+
+No server yet and you only want to look? Press the green **Code** button at the top of this page, then **Download ZIP**.
+
 ## Step 3: Connect your AI subscription
 
-The server needs two free tools first: **Node.js** version 26.5 or newer ([nodejs.org](https://nodejs.org)) and the **Claude Code** command-line tool ([Anthropic's guide](https://docs.claude.com/en/docs/claude-code/setup)). When both are installed, copy this:
+Paste this and press Enter:
 
 ```sh
-claude login
+sudo mastan-login claude
 ```
 
-It shows a link. Open it on your phone or laptop and sign in with your own Claude account.
+It shows a link. Open it on your phone or laptop, sign in with your own Claude account, and paste the code it gives you back into the server.
 
-## Step 4: Start Mastan
-
-Copy this block. Replace the two `PASTE_...` parts with the token and the ID from step 2.
+Have ChatGPT too? Paste this as well:
 
 ```sh
-cd /opt/mastan-me
-npm ci
-
-export MASTAN_ME_DATA=/var/lib/mastan-me
-export MASTAN_ME_HOSTNAME=localhost
-export MASTAN_ME_RP_ID=localhost
-export SESSION_SECRET=$(openssl rand -hex 32)
-export AGENT_HOME=$HOME
-export CLAUDE_BIN=$(command -v claude)
-export TELEGRAM_BOT_TOKEN=PASTE_YOUR_TOKEN_HERE
-export OWNER_TELEGRAM_ID=PASTE_YOUR_ID_HERE
-export MASTAN_ME_MAIN_SANDBOX=off
-
-bin/mastan-me-admin init-workspace
-npm start
+sudo mastan-login codex
 ```
 
-Now open your bot in Telegram and say hello.
+It shows a link and a short code. Open the link, sign in with your ChatGPT account and type the code.
+
+## Step 4: Say hello
+
+Open your bot in Telegram and say hello.
+
+If it stays quiet, this shows what Mastan is doing:
+
+```sh
+sudo journalctl -u mastan-me -f
+```
 
 ## Honest notes
 
-- **This guide is new.** The code runs every day on our own servers, but these exact steps have not yet been tested from zero on an empty server. A one-command installer and a video walkthrough are being prepared. If a step fails for you, [open an issue](https://github.com/mastanai/mastan/issues) and tell us where.
+- **This guide is new.** The installer has been tested from zero on an empty Ubuntu 26.04 server, including a restart and a reboot. The two sign-in steps and the first Telegram chat are being tested with a real account now. If a step fails for you, [open an issue](https://github.com/mastanai/mastan/issues) and tell us where.
+- **Schedules use Riyadh time for now.** "Remind me at 9" means 9:00 in Riyadh. A setting for your own time zone is planned.
 - **Use your own subscription only for yourself.** A personal AI subscription is for your own use, not for serving other people. If others will talk to your Mastan, read the API-key section in the developer notes.
 - **Your data stays on your server.** This repository contains no keys, no user data and no server addresses.
 - WhatsApp, email, the web chat with passkey login and the other parts are optional. Start with Telegram.

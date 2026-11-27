@@ -116,6 +116,8 @@ sudo journalctl -u mastan-me -f
 
 ## Adding the other app later
 
+You can have both WhatsApp and Telegram. Add the second one any time:
+
 - WhatsApp, or linking again: `sudo mastan-login whatsapp`
 - Telegram: `sudo mastan-login telegram`
 

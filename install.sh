@@ -464,6 +464,7 @@ case "\${1:-}" in
       printf 'Paste your bot token (it stays hidden) and press Enter: '
       stty -echo </dev/tty 2>/dev/null || true; IFS= read -r tok </dev/tty || tok=""; stty echo </dev/tty 2>/dev/null || true; echo
       tok=\$(printf '%s' "\$tok" | tr -d '[:space:]')
+      printf '%s' "\$tok" | grep -Eq '^[0-9]{5,}:[A-Za-z0-9_-]{30,}\$' || echo "That does not look like a bot token. It looks like 123456789:ABCdef... Try again."
     done
     id=""; while ! printf '%s' "\$id" | grep -Eq '^[0-9]{3,}\$'; do
       printf 'Paste your Telegram ID (a number) and press Enter: '; IFS= read -r id </dev/tty || id=""
@@ -523,22 +524,27 @@ next_steps() {
   printf '============================================================\n'
   local n=1
   if ! logged_in claude; then
-    printf '\n %s. Connect your Claude subscription. Paste this and press Enter:\n\n      mastan-login claude\n' "$n"; n=$((n + 1))
+    printf '\n %s. Connect your Claude subscription. Paste this and press Enter:\n\n      sudo mastan-login claude\n' "$n"; n=$((n + 1))
   fi
   if ! logged_in codex; then
-    printf '\n %s. Connect your ChatGPT subscription (for coding tasks). Paste this:\n\n      mastan-login codex\n' "$n"; n=$((n + 1))
+    printf '\n %s. Connect your ChatGPT subscription (for coding tasks). Paste this:\n\n      sudo mastan-login codex\n' "$n"; n=$((n + 1))
   fi
   if [ -n "$WA_NUM" ] && ! wa_linked; then
-    printf '\n %s. Link Mastan'"'"'s own WhatsApp number. Paste this:\n\n      mastan-login whatsapp\n' "$n"; n=$((n + 1))
+    printf '\n %s. Link Mastan'"'"'s own WhatsApp number. Paste this:\n\n      sudo mastan-login whatsapp\n' "$n"; n=$((n + 1))
   elif [ -z "$WA_NUM" ] && [ -z "$TOKEN" ]; then
-    printf '\n %s. Pick a chat app. Paste one of these:\n\n      mastan-login whatsapp\n      mastan-login telegram\n' "$n"; n=$((n + 1))
+    printf '\n %s. Pick where you talk to Mastan. Paste one of these:\n\n      sudo mastan-login whatsapp\n      sudo mastan-login telegram\n' "$n"; n=$((n + 1))
   fi
   if [ -n "$WA_NUM" ]; then
     printf '\n %s. From your phone (+%s), write hello to Mastan'"'"'s WhatsApp number.\n' "$n" "$WA_NUM"
-  else
+  elif [ -n "$TOKEN" ]; then
     printf '\n %s. Open your bot in Telegram and say hello.\n' "$n"
   fi
-  printf '\n Problems? See what Mastan is doing:  journalctl -u %s -f\n\n' "$SVC"
+  if [ -n "$WA_NUM" ] && [ -z "$TOKEN" ]; then
+    printf '\n Also want Telegram? Paste this:  sudo mastan-login telegram\n'
+  elif [ -n "$TOKEN" ] && [ -z "$WA_NUM" ]; then
+    printf '\n Also want WhatsApp? Paste this:  sudo mastan-login whatsapp\n'
+  fi
+  printf '\n Problems? See what Mastan is doing:  sudo journalctl -u %s -f\n\n' "$SVC"
 }
 
 STEP=start

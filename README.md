@@ -86,7 +86,7 @@ sudo journalctl -u mastan-me -f
 
 ## Honest notes
 
-- **This guide is new.** The installer has been tested from zero on an empty Ubuntu 26.04 server, including a restart and a reboot. The two sign-in steps and the first Telegram chat are being tested with a real account now. If a step fails for you, [open an issue](https://github.com/mastanai/mastan/issues) and tell us where.
+- **This guide is new.** The installer has been tested from zero on empty Ubuntu 24.04 and 26.04 servers, including a restart and a reboot. The two sign-in steps and the first Telegram chat are being tested with a real account now. If a step fails for you, [open an issue](https://github.com/mastanai/mastan/issues) and tell us where.
 - **Schedules use Riyadh time for now.** "Remind me at 9" means 9:00 in Riyadh. A setting for your own time zone is planned.
 - **Use your own subscription only for yourself.** A personal AI subscription is for your own use, not for serving other people. If others will talk to your Mastan, read the API-key section in the developer notes.
 - **Your data stays on your server.** This repository contains no keys, no user data and no server addresses.

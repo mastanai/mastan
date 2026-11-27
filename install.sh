@@ -147,49 +147,41 @@ install_node_packages() {
   note "Codex $("$NODE_DIR/bin/codex" --version 2>/dev/null | head -n1)"
 }
 
-# Can user mastan start the same bubblewrap sandbox the main agent uses?
+# The main agent runs inside bubblewrap, and the coder (Codex) starts its own bubblewrap inside that.
+# Ubuntu confines /usr/bin/bwrap so that programs inside it cannot create another sandbox, so the
+# main agent gets its own copy of bwrap (at the path the code expects) with a small AppArmor profile
+# that allows user namespaces: the pattern Ubuntu uses for browsers. Remove: rm /etc/apparmor.d/mastan-bwrap
+BWRAP=$APP/runtime/codex-vendor/codex-resources/bwrap
+
+# Can user mastan start the main sandbox, and a second sandbox inside it?
 probe_bwrap() {
-  cd / && runuser -u "$USR" -- /usr/bin/bwrap --dev-bind / / --unshare-pid --unshare-ipc --proc /proc \
-    --die-with-parent /bin/true >/dev/null 2>&1
+  cd / && runuser -u "$USR" -- "$BWRAP" --dev-bind / / --unshare-pid --unshare-ipc --proc /proc \
+    --die-with-parent -- /usr/bin/bwrap --dev-bind / / --unshare-pid --proc /proc /bin/true >/dev/null 2>&1
 }
 
-# Ubuntu 24.04 blocks user namespaces for programs without an AppArmor profile that allows them.
-# This gives bubblewrap (and the copy inside the Codex CLI, if any) the same small profile Ubuntu
-# uses for browsers: unconfined, user namespaces allowed. Remove with: rm /etc/apparmor.d/mastan-bwrap*
-# then systemctl reload apparmor.
 allow_bwrap_userns() {
   local f=/proc/sys/kernel/apparmor_restrict_unprivileged_userns
-  [ -r "$f" ] && [ "$(cat "$f")" = 1 ] || return 1
+  [ -r "$f" ] && [ "$(cat "$f")" = 1 ] || return 0
   command -v apparmor_parser >/dev/null || return 1
-  write_bwrap_profile mastan-bwrap /usr/bin/bwrap
-  local i=0 b
-  while IFS= read -r b; do
-    i=$((i + 1))
-    write_bwrap_profile "mastan-bwrap-codex$i" "$b"
-  done < <(find "$NODE_DIR/lib/node_modules/@openai" -type f -name bwrap -perm -u+x 2>/dev/null)
-  return 0
-}
-
-write_bwrap_profile() {
-  local name=$1 path=$2
-  cat > "/etc/apparmor.d/$name" <<EOF
-# Written by the Mastan installer: lets $path create user namespaces (its sandbox needs them).
+  cat > /etc/apparmor.d/mastan-bwrap <<EOF
+# Written by the Mastan installer: lets Mastan's copy of bubblewrap create user namespaces.
 abi <abi/4.0>,
 include <tunables/global>
 
-profile $name $path flags=(unconfined) {
+profile mastan-bwrap $BWRAP flags=(unconfined) {
   userns,
-  include if exists <local/$name>
+  include if exists <local/mastan-bwrap>
 }
 EOF
-  apparmor_parser -r "/etc/apparmor.d/$name"
+  apparmor_parser -r /etc/apparmor.d/mastan-bwrap
 }
 
 setup_sandbox() {
   say "Checking the safety sandbox"
+  install -d -m 0755 "$(dirname "$BWRAP")"
+  install -m 0755 /usr/bin/bwrap "$BWRAP"
   SANDBOX=on
-  if probe_bwrap; then note "Sandbox works."; return; fi
-  if allow_bwrap_userns && probe_bwrap; then note "Sandbox works (AppArmor permission added)."; return; fi
+  if allow_bwrap_userns && probe_bwrap; then note "Sandbox works."; return; fi
   SANDBOX=off
   note "Warning: the sandbox does not work on this server, so Mastan runs without it."
   note "Mastan still works. The sandbox only adds a layer of protection."
@@ -260,7 +252,7 @@ write_env() {
       echo "TELEGRAM_BOT_TOKEN=$TOKEN"
       echo "OWNER_TELEGRAM_ID=$OWNER"
     fi
-    echo "MASTAN_ME_BWRAP=/usr/bin/bwrap"
+    echo "MASTAN_ME_BWRAP=$BWRAP"
     echo "MASTAN_ME_MAIN_SANDBOX=$SANDBOX"
     echo "MASTAN_ME_MAIL_ALERTS=off"
     echo "# --- your own lines below ---"
@@ -366,8 +358,7 @@ start_service() {
   systemctl daemon-reload
   systemctl enable -q "$SVC"
   systemctl restart "$SVC"
-  local i
-  for i in 1 2 3 4 5 6 7 8 9 10; do
+  for _ in 1 2 3 4 5 6 7 8 9 10; do
     if curl -fsS "http://127.0.0.1:3100/healthz" >/dev/null 2>&1; then note "Mastan is running."; return; fi
     sleep 2
   done

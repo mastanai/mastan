@@ -138,6 +138,9 @@ install_node_packages() {
   npm install -g --no-audit --no-fund --loglevel=error @anthropic-ai/claude-code @openai/codex >/dev/null
   [ -x "$NODE_DIR/bin/claude" ] || die "The Claude Code CLI did not install."
   [ -x "$NODE_DIR/bin/codex" ] || die "The Codex CLI did not install."
+  # The agent's tools run with a clean environment, so they find Codex at the code's default path.
+  install -d -m 0755 "$APP/runtime/codex-vendor/bin"
+  ln -sfn "$NODE_DIR/bin/codex" "$APP/runtime/codex-vendor/bin/codex"
   chown -R root:root "$APP"
   chmod -R u=rwX,go=rX "$APP"
   note "Claude Code $("$NODE_DIR/bin/claude" --version 2>/dev/null | head -n1)"

@@ -1,6 +1,6 @@
 # Mastan
 
-**Your own AI assistant that lives in your chats.** You write to it on Telegram, WhatsApp or a private web page, like you write to a person. It answers, remembers what you told it, makes files for you (presentations, spreadsheets, documents) and can do work on a schedule while you sleep.
+**Your own AI assistant that lives in your chats.** You write to it on Telegram or WhatsApp, like you write to a person. It answers, remembers what you told it, makes PowerPoint, Excel and Word files for you, checks facts with sources, opens web pages, and reminds you on time.
 
 This is the real code behind [mastan.ai](https://mastan.ai). It is free. Take it, run it, change it.
 
@@ -35,6 +35,20 @@ So there are two ways to get your own Mastan:
 
 **The do-it-yourself way:** keep reading.
 
+## What it can do out of the box
+
+Tested on a fresh install, by chat:
+
+- **Presentations.** "Make me a 5-slide deck about the history of coffee." An editable PowerPoint arrives in the chat in about 2 to 3 minutes. Mastan renders every slide and looks at it before sending.
+- **Spreadsheets.** "Make me a household budget in Excel with formulas." A workbook with working formulas, checked for errors, in about 4 minutes.
+- **Word documents.** "Write a letter to my landlord about the heating." A one-page .docx in under a minute, with blanks instead of made-up names.
+- **Reminders.** "Remind me in 3 minutes to stretch." It arrives on time.
+- **Fact checks.** "Is the Great Wall visible from space?" A verdict first, then the evidence with sources, in under a minute.
+- **Shopping research.** "Where can I buy a Kindle in Germany and for how much?" Live prices with links to the pages it read.
+- **Web pages.** "Open this page and send me a screenshot." It opens the page in its own browser and sends the picture.
+
+All of this was tested through Telegram. On WhatsApp, background tasks and reminders do not work yet (see "Adding the other app later").
+
 ## What you need
 
 1. **A server.** A small Linux server from any provider. About 5 euros a month is enough.
@@ -43,7 +57,7 @@ So there are two ways to get your own Mastan:
 
 You pay for the server and the subscription yourself, in two different places. Mastan itself costs nothing.
 
-Pick **Ubuntu 24.04 or newer** when you rent the server. 4 GB of memory is enough.
+Pick **Ubuntu 24.04 or newer** when you rent the server. 4 GB of memory is enough. The install uses about 4 GB of disk, most of it for the document tools and the browser.
 
 ## Before you start: WhatsApp or Telegram?
 
@@ -124,7 +138,7 @@ What works on WhatsApp today: chatting, files you send it, and files it makes fo
 
 ## Honest notes
 
-- **This guide is new.** The installer has been tested from zero on empty Ubuntu 24.04 and 26.04 servers, including a restart and a reboot. The sign-in steps, WhatsApp linking and the first chats are being tested with a real account now. If a step fails for you, [open an issue](https://github.com/mastanai/mastan/issues) and tell us where.
+- **This guide is new.** The installer has been tested from zero on empty Ubuntu 24.04 and 26.04 servers, including a restart and a reboot. Telegram setup and the Claude sign-in have been done by a person on a fresh server. WhatsApp linking and the ChatGPT sign-in are still being tested. If a step fails for you, [open an issue](https://github.com/mastanai/mastan/issues) and tell us where.
 - **Schedules use Riyadh time for now.** "Remind me at 9" means 9:00 in Riyadh. A setting for your own time zone is planned.
 - **Use your own subscription only for yourself.** A personal AI subscription is for your own use, not for serving other people. If others will talk to your Mastan, read the API-key section in the developer notes.
 - **Your data stays on your server.** This repository contains no keys, no user data and no server addresses.

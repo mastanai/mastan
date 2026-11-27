@@ -3,14 +3,15 @@
 #
 #   curl -fsSL https://raw.githubusercontent.com/mastanai/mastan/main/install.sh | sudo bash
 #
-# What it does: installs Node.js, git, bubblewrap, the Claude Code CLI and the Codex CLI;
+# What it does: installs Node.js, git, bubblewrap, the Claude Code CLI and the Codex CLI,
+# Python with the Office libraries, LibreOffice and Chromium (for files and the browser);
 # creates the user "mastan"; puts the code in /opt/mastan-me, data in /var/lib/mastan-me and
 # secrets in /etc/mastan-me; asks whether you want WhatsApp or Telegram; starts Mastan
 # as a system service. Safe to run again: it updates the code and keeps your settings.
 # WhatsApp is linked after the install with: sudo mastan-login whatsapp
 #
 # Unattended use: set WHATSAPP_OWNER (your own number) or TELEGRAM_BOT_TOKEN and OWNER_TELEGRAM_ID
-# in the environment first, or MASTAN_SKIP_TELEGRAM=1 to pick the chat app later.
+# in the environment first, or MASTAN_SKIP_TELEGRAM=1 to pick the chat app later. MASTAN_BROWSER=off skips Chromium.
 set -Eeuo pipefail
 
 REPO_URL=${MASTAN_REPO:-https://github.com/mastanai/mastan.git}

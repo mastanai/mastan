@@ -514,7 +514,7 @@ wa_linked() { grep -qs '"me"' "$DATA/whatsapp/auth/creds.json"; }
 link_whatsapp() {
   [ "$WA_NEW" = 1 ] && have_tty && ! wa_linked || return 0
   say "Linking Mastan's WhatsApp number"
-  /usr/local/bin/mastan-login whatsapp "$WA_NUM" </dev/tty || note "Not linked yet. You can do it later with: sudo mastan-login whatsapp"
+  /usr/local/bin/mastan-login whatsapp "$WA_NUM" </dev/tty || true
 }
 
 next_steps() {

@@ -148,6 +148,54 @@ install_node_packages() {
   note "Codex $("$NODE_DIR/bin/codex" --version 2>/dev/null | head -n1)"
 }
 
+# Tools the starter skills use: Python with the Office libraries (presentations, spreadsheets, Word),
+# LibreOffice and Poppler so Mastan can render a file and look at it before sending, and Chromium for the
+# browser. All under $APP/runtime (ignored by git) or from Ubuntu. Skip the browser: MASTAN_BROWSER=off.
+PY_DIR=$APP/runtime/py
+PW_DIR=$APP/runtime/ms-playwright
+
+# Is the pinned Chromium (and its headless shell) fully downloaded?
+browser_ready() {
+  (cd "$APP" && PLAYWRIGHT_BROWSERS_PATH=$PW_DIR "$NODE_DIR/bin/node" -e '
+    const fs = require("node:fs");
+    const {registry, browserDirectoryToMarkerFilePath} = require("playwright-core/lib/coreBundle").registry;
+    process.exit(registry.resolveBrowsers(["chromium"], {}).every(e =>
+      fs.existsSync(e.executablePath()) && fs.existsSync(browserDirectoryToMarkerFilePath(e.directory))) ? 0 : 1);
+  ' >/dev/null 2>&1)
+}
+
+install_tools() {
+  say "Installing document tools: Python, LibreOffice and fonts (about a minute)"
+  apt-get -o DPkg::Lock::Timeout=300 install -y -qq --no-install-recommends python3-venv \
+    libreoffice-impress libreoffice-calc libreoffice-writer poppler-utils fontconfig \
+    fonts-liberation2 fonts-dejavu-core fonts-noto-core >/dev/null
+  if ! "$PY_DIR/bin/python3" -c 'import pptx, openpyxl, docx, PIL' >/dev/null 2>&1; then
+    rm -rf "$PY_DIR"
+    python3 -m venv "$PY_DIR"
+    "$PY_DIR/bin/pip" install -q --disable-pip-version-check --no-cache-dir \
+      'python-pptx>=1.0.2,<2' 'openpyxl>=3.1.5,<4' 'python-docx>=1.1,<2' 'Pillow>=10' >/dev/null \
+      || die "Could not install the Python document tools. Check the internet connection and run the installer again."
+  fi
+  note "$("$PY_DIR/bin/python3" -c 'import pptx, openpyxl, docx; print("python-pptx", pptx.__version__, "/ openpyxl", openpyxl.__version__, "/ LibreOffice")')"
+
+  if [ "${MASTAN_BROWSER:-on}" = off ]; then
+    note "Browser skipped (MASTAN_BROWSER=off)."
+  else
+    say "Installing the browser Mastan uses to open pages (Chromium, about a minute)"
+    install -d -m 0755 "$PW_DIR"
+    if browser_ready; then
+      note "Browser is already installed."
+    elif (cd "$APP" && PLAYWRIGHT_BROWSERS_PATH=$PW_DIR "$NODE_DIR/bin/node" node_modules/playwright/cli.js \
+        install --with-deps chromium >/dev/null 2>&1) && browser_ready; then
+      note "Browser installed."
+    else
+      note "The browser did not install. Mastan works without it; run the installer again to retry."
+    fi
+  fi
+  chown -R root:root "$APP/runtime"
+  chmod -R u=rwX,go=rX "$PY_DIR" "$PW_DIR" 2>/dev/null || true
+}
+
 # The main agent runs inside bubblewrap, and the coder (Codex) starts its own bubblewrap inside that.
 # Ubuntu confines /usr/bin/bwrap so that programs inside it cannot create another sandbox, so the
 # main agent gets its own copy of bwrap (at the path the code expects) with a small AppArmor profile
@@ -517,6 +565,7 @@ EOF
 init_workspace() {
   say "Preparing Mastan's workspace"
   "$APP/bin/mastan-me-admin" init-workspace >/dev/null
+  "$APP/bin/mastan-me-admin" skills-inventory >/dev/null 2>&1 || true
 }
 
 start_service() {
@@ -601,6 +650,7 @@ main() {
   STEP=get_code; get_code
   STEP=install_node; install_node
   STEP=install_node_packages; install_node_packages
+  STEP=install_tools; install_tools
   STEP=setup_sandbox; setup_sandbox
   STEP=write_env; write_env
   STEP=write_service; write_service

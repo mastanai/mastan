@@ -9,3 +9,4 @@ board/sync-state.json
 jobs/runs.log
 # Fetched YouTube comments (bulky, other people's words)
 /work/
+__pycache__/

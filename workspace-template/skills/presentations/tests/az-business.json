@@ -1,0 +1,16 @@
+{
+  "title": "Biznes yeniləməsi", "language": "az",
+  "slides": [
+    {"type":"title", "title":"Satış artımı davam edir", "subtitle":"Rəhbərlik üçün biznes yeniləməsi", "notes":"Bu təqdimatdakı bütün göstəricilər sınaq üçün hazırlanmış nümunə məlumatlarıdır."},
+    {"type":"metrics", "title":"Gəlir artımı müştəri bazasını genişləndirir",
+     "metrics":[{"label":"Rüblük gəlir","value":"120 min ₼","context":"Hədəfdən 20% yüksək"},{"label":"Yeni müştərilər","value":"48","context":"Əvvəlki rübdə 40"},{"label":"Orta sifariş","value":"2 500 ₼","context":"120 000 ₼ / 48 sifariş"},{"label":"Təkrar sifariş payı","value":"25%","context":"48 sifarişdən 12-si"}],
+     "sources":["Nümunə satış cədvəli, aprel-iyun"], "notes":"Nümunə: 48 sifarişdən 120 000 ₼ gəlir. Orta sifariş 120 000 / 48 = 2 500 ₼. Təkrar sifariş 12 / 48 = 25%. Gəlir hədəfi 100 000 ₼; fərq 20%. Yeni müştərilər 48, əvvəlki rübdə 40."},
+    {"type":"chart", "title":"Aylıq gəlir rüb ərzində yüksəlir",
+     "chart":{"kind":"column","categories":["Aprel","May","İyun"],"series":[{"name":"Gəlir, min ₼","values":[30,40,50]}],"number_format":"0"},
+     "context":"Aylıq gəlirlər birlikdə 120 min ₼ edir", "sources":["Nümunə satış cədvəli, aylıq bölgü"], "notes":"30 + 40 + 50 = 120 min ₼. Ə, ğ, ı, ö, ş, ü, ç hərflərinin görünüşünü yoxlayın."},
+    {"type":"timeline", "title":"Növbəti rüb təkrar satışa yönəlir",
+     "steps":[{"label":"İyul","title":"Ehtiyacı öyrən","detail":"Müştəri rəylərini topla"},{"label":"Avqust","title":"Təklifi sına","detail":"Uyğun paketi təqdim et"},{"label":"Sentyabr","title":"Nəticəni ölç","detail":"Təkrar sifarişi izlə"}],
+     "sources":["Nümunə fəaliyyət planı, təklif"]},
+    {"type":"closing", "title":"Təkrar satış sınağını təsdiqləyin", "subtitle":"Nəticələri növbəti biznes icmalında qiymətləndirək", "notes":"Bu, təsdiqlənmiş qərar deyil, nümunə təklifdir."}
+  ]
+}

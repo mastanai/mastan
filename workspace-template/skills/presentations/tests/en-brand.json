@@ -1,0 +1,6 @@
+{
+  "name":"Northstar",
+  "logo_path":null,
+  "colors":{"primary":"#143C36","secondary":"#EDF4EF","accent":"#366C45","text":"#143C36","muted":"#52635B","background":"#FFFFFF","on_dark":"#FFFFFF"},
+  "fonts":{"heading":"Arial","body":"Arial"}
+}

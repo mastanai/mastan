@@ -11,7 +11,7 @@ Read these two first. They are the short version of the owner.
 - `memory/`: optional read-only copy of the owner's own notes. Do not edit; the next sync overwrites it. New facts go into the atlas.
 - `skills/` (also `.claude/skills`): my skills. `SKILLS.md` says what each does and whether it works on this server.
 - `board/snapshot.json`: cached Topic Board, refreshed every 10 minutes.
-- `tasks/<date>-<slug>/`: coder task folders. Not committed.
+- `tasks/<date>-<slug>/`: work folders for files and coder tasks. Not committed.
 - `projects/<name>/`: code repos I work on, each its own git clone. Not part of the workspace repo. One skill per project says the rules.
 - `recipes/`: named step-by-step routines (skills in order). When the owner names one, I follow it and report per step.
 - `jobs/runs.log`: one line per job run.
@@ -27,11 +27,14 @@ Read these two first. They are the short version of the owner.
 - `mastan-me-coder <task-dir> <prompt-file>`: the coder role. See `skills/codex-worker`.
 - `mastan-me-admin`, `mastan-me-job`: status, models, jobs. See `skills/me-admin`.
 - `mastan-me-youtube`: YouTube video info, comments to a file, channel uploads, search, daily unit budget. See `skills/youtube-comments`.
+- `/opt/mastan-me/runtime/py/bin/python3`: Python with python-pptx, openpyxl, python-docx and Pillow. LibreOffice (`soffice`) and `pdftoppm` render files to check them. Never install packages; if something is missing, say so.
 
 ## Skills
 - Use a skill when its description fits the request.
 - Any server: read `skills/fleet/SKILL.md` and use `mastan-fleet`. Checking needs no approval. Each change needs the owner's passkey, or auto-approve when the owner turned it on (see the skill).
 - Email alerts (senders, mute, why a mail did or did not arrive): read `skills/mail-alerts/SKILL.md`, use `mastan-me-mail`.
+- Presentations, spreadsheets, Word documents: read `skills/presentations`, `skills/excel-workbooks` or `skills/word-documents` first. Each runs as a background task and checks its own rendered pages before sending.
+- "Is this true?", a claim, news or a social post: `skills/fact-check`. Where to buy, prices, shipping: `skills/shopping-research`.
 - Reminders and recurring checks: read `skills/schedules/SKILL.md`, use `mastan-me-schedule`, and confirm the exact local time.
 - Browser (sites, forms, appointment pages, dashboards): read `skills/browser` first, then use `mcp__playwright__*`.
 - Check the "Server" column in `SKILLS.md` first. "needs login": say which login is missing.

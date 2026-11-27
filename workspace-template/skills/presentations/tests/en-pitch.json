@@ -1,0 +1,11 @@
+{
+  "title":"Northstar pilot pitch", "language":"en",
+  "slides":[
+    {"type":"title","title":"A focused pilot can reduce rework","subtitle":"Northstar | Illustrative investment case"},
+    {"type":"hero","title":"Rework consumes a material share of capacity","value":"20%","label":"of weekly capacity spent on rework","context":"Illustrative baseline: 8 of 40 hours","sources":["Illustrative scenario, baseline worksheet"],"notes":"This is a scenario assumption, not measured customer evidence. 8 rework hours / 40 total hours = 20%."},
+    {"type":"chart","title":"The pilot targets fewer rework hours","chart":{"kind":"bar","categories":["Baseline","Pilot target"],"series":[{"name":"Rework hours per week","values":[8,5]}],"number_format":"0"},"context":"The target is a hypothesis to test","sources":["Illustrative scenario, pilot assumptions"],"notes":"Baseline and target are assumptions. A successful pilot must measure the actual change."},
+    {"type":"quote","title":"The proposed pilot tests one user need","quote":"I need to find the approved version quickly.","attribution":"Fictional user statement for this scenario","sources":["Illustrative scenario, fictional statement"],"notes":"This is a fictional statement, not an attributed customer interview."},
+    {"type":"table","title":"A bounded pilot makes the decision testable","headers":["Measure","Baseline assumption","Pilot target"],"rows":[["Rework hours per week","8","5"],["Pilot teams","1","1"],["Evaluation period","4 weeks","4 weeks"]],"sources":["Illustrative scenario, proposed pilot plan"],"notes":"All numbers are scenario assumptions. The evaluation compares the same team over the stated period."},
+    {"type":"closing","title":"Approve a measured pilot before scaling","subtitle":"Agree on the owner, baseline and review date"}
+  ]
+}

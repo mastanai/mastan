@@ -12,11 +12,10 @@ The code is shared as it runs for one owner. Keys, user data, server addresses a
 | `src/agent/` | Main agent turns, background tasks, schedules, busy replies |
 | `src/providers/` | Model providers behind one interface (`claude-cli`, `codex-cli`, `deepseek-cli`) and the sandbox around them |
 | `src/channels/` | Telegram, WhatsApp (baileys) and web chat |
-| `src/web/` | Passkey login (WebAuthn), chat client, admin pages (atlas, board, fleet, mail, people, clients) |
+| `src/web/` | Passkey login (WebAuthn), chat client, admin pages (atlas, board, fleet, mail, people) |
 | `src/atlas/`, `src/brain/` | The "atlas": the owner's positions, people, questions and dumps as markdown files in a local git repo |
 | `src/jobs/` | Morning list, nightly consolidation, backup, health, mail alerts |
 | `src/mail/` | IMAP/SMTP mailbox with client certificates |
-| `src/clients/` | Owner-only sales and billing pages (Stripe restricted key, optional) |
 | `bin/` | Small CLIs the agent calls from its tools (`mastan-me-send`, `mastan-me-task`, `mastan-me-schedule`, ...) and operator commands |
 | `fleet-gate/`, `github-gate/` | Separate privileged services that hold SSH and GitHub credentials, so the agent never does |
 | `workspace-template/` | Starting content of the agent's workspace: `SOUL.md` (identity and rules), `CLAUDE.md`, skills |

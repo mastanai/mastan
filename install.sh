@@ -64,7 +64,7 @@ install_packages() {
   say "Installing system packages (git, bubblewrap, curl)"
   export DEBIAN_FRONTEND=noninteractive NEEDRESTART_SUSPEND=1
   apt-get -o DPkg::Lock::Timeout=300 update -qq
-  apt-get -o DPkg::Lock::Timeout=300 install -y -qq ca-certificates curl git bubblewrap openssl xz-utils util-linux libatomic1 >/dev/null
+  apt-get -o DPkg::Lock::Timeout=300 install -y -qq ca-certificates curl git bubblewrap openssl xz-utils util-linux libatomic1 qrencode >/dev/null
 }
 
 install_node() {
@@ -196,13 +196,14 @@ ask_telegram() {
     say "Skipping Telegram for now"
     note "Run the installer again later to add your bot token and your Telegram ID."
   else
-    say "Telegram"
-    note "Mastan talks to you through your own Telegram bot."
+    say "Telegram (optional)"
+    note "Mastan can talk to you on Telegram, on WhatsApp, or both."
+    note "No Telegram? Press Enter to skip, you can use WhatsApp instead."
     note "1. In Telegram, open @BotFather, send /newbot and follow the questions."
     note "2. BotFather gives you a token. It looks like 123456789:ABCdef..."
     note "3. Open @userinfobot in Telegram. It shows your ID, a number."
     while :; do
-      printf '\n    Paste your bot token (it stays hidden) and press Enter: ' >/dev/tty
+      printf '\n    Paste your bot token (it stays hidden), or press Enter to skip: ' >/dev/tty
       IFS= read -rs TOKEN </dev/tty || TOKEN=""
       printf '\n' >/dev/tty
       TOKEN=$(printf '%s' "$TOKEN" | tr -d '[:space:]')
@@ -220,7 +221,7 @@ ask_telegram() {
       done
     else
       OWNER=""
-      note "Skipped. Run the installer again later to add Telegram."
+      note "Skipped. You can connect WhatsApp after the install, or run the installer again for Telegram."
     fi
   fi
   if [ -n "$TOKEN" ]; then valid_token "$TOKEN" || die "The bot token does not look right."; fi
@@ -236,7 +237,7 @@ write_env() {
   local secret managed tmp key
   secret=$(env_get SESSION_SECRET)
   [ -n "$secret" ] || secret=$(openssl rand -hex 32)
-  managed='MASTAN_ME_DATA MASTAN_ME_HOSTNAME MASTAN_ME_RP_ID SESSION_SECRET AGENT_HOME CLAUDE_BIN CODEX_BIN CODEX_HOME_FOR_CODER TELEGRAM_BOT_TOKEN OWNER_TELEGRAM_ID MASTAN_ME_BWRAP MASTAN_ME_MAIN_SANDBOX MASTAN_ME_MAIL_ALERTS'
+  managed='MASTAN_ME_DATA MASTAN_ME_HOSTNAME MASTAN_ME_RP_ID SESSION_SECRET AGENT_HOME CLAUDE_BIN CODEX_BIN CODEX_HOME_FOR_CODER TELEGRAM_BOT_TOKEN OWNER_TELEGRAM_ID MASTAN_ME_BWRAP MASTAN_ME_MAIN_SANDBOX MASTAN_ME_MAIL_ALERTS MASTAN_ME_WHATSAPP WHATSAPP_ALLOW'
   tmp=$(umask 077; mktemp "$ETC/.env.XXXXXX")
   {
     echo "# Mastan settings. Written by install.sh; your own extra lines below the marker are kept."
@@ -255,6 +256,10 @@ write_env() {
     echo "MASTAN_ME_BWRAP=$BWRAP"
     echo "MASTAN_ME_MAIN_SANDBOX=$SANDBOX"
     echo "MASTAN_ME_MAIL_ALERTS=off"
+    if [ -n "$(env_get WHATSAPP_ALLOW)" ]; then
+      echo "MASTAN_ME_WHATSAPP=$(env_get MASTAN_ME_WHATSAPP | grep . || echo on)"
+      echo "WHATSAPP_ALLOW=$(env_get WHATSAPP_ALLOW)"
+    fi
     echo "# --- your own lines below ---"
     if [ -f "$ENVF" ]; then
       sed -n '/^# --- your own lines below ---$/,$p' "$ENVF" | sed 1d | while IFS= read -r line; do
@@ -328,6 +333,76 @@ set -eu
 [ "\$(id -u)" = 0 ] || { echo "Run it as root: sudo mastan-login \${1:-claude}"; exit 1; }
 B=$NODE_DIR/bin
 as_mastan() { cd $AGENT_HOME && runuser -u $USR -- env HOME=$AGENT_HOME CODEX_HOME=$AGENT_HOME/.codex PATH=\$B:/usr/local/bin:/usr/bin:/bin "\$@"; }
+ENVF=$ENVF
+WA=$DATA/whatsapp
+
+set_env() {  # set_env KEY VALUE: replace the key in the settings file, keep everything else
+  tmp=\$(mktemp $ETC/.env.XXXXXX)
+  awk -v k="\$1" -v v="\$2" '
+    index(\$0, k "=") == 1 { next }
+    /^# --- your own lines below ---\$/ && !done { print k "=" v; done = 1 }
+    { print }
+    END { if (!done) print k "=" v }' "\$ENVF" > "\$tmp"
+  chown root:$USR "\$tmp"; chmod 0640 "\$tmp"; mv -f "\$tmp" "\$ENVF"
+}
+
+wa_state() {  # prints state|number|problem from Mastan's local health check
+  "\$B/node" -e 'fetch("http://127.0.0.1:3100/healthz").then(r => r.json()).then(j => { const w = j.whatsapp || {}; console.log([w.state || "", w.me || "", w.problem || ""].join("|")); }).catch(() => console.log("starting||"))' 2>/dev/null || echo "starting||"
+}
+
+whatsapp() {
+  if [ "\${1:-}" = reset ]; then
+    systemctl stop $SVC; rm -rf "\$WA/auth" "\$WA/qr.txt"; systemctl start $SVC
+    echo "WhatsApp link removed. Run 'sudo mastan-login whatsapp' to link again."; return 0
+  fi
+  echo
+  echo "Mastan needs its own WhatsApp number: a second number, not the one you chat from."
+  echo "A spare SIM works, or the WhatsApp Business app on the same phone with a second number."
+  echo
+  num=\$(printf '%s' "\${1:-}" | tr -cd '0-9')
+  while [ \${#num} -lt 8 ] || [ \${#num} -gt 15 ]; do
+    printf 'Your own WhatsApp number, the one you will write FROM (with country code): '
+    IFS= read -r num </dev/tty || { echo; return 1; }
+    num=\$(printf '%s' "\$num" | tr -cd '0-9')
+    [ \${#num} -ge 8 ] && [ \${#num} -le 15 ] || echo "Type the full number with country code, for example +44 7700 900123."
+  done
+  set_env MASTAN_ME_WHATSAPP on
+  set_env WHATSAPP_ALLOW "\$num"
+  echo "Saved. Mastan will answer only +\$num."
+  rm -f "\$WA/qr.txt"
+  systemctl restart $SVC
+  echo "Starting WhatsApp..."
+  shown=""; tries=0
+  while [ \$tries -lt 150 ]; do
+    tries=\$((tries + 1))
+    st=\$(wa_state); state=\${st%%|*}; rest=\${st#*|}; me=\${rest%%|*}; problem=\${rest#*|}
+    if [ "\$state" = open ]; then
+      echo
+      echo "Linked. Mastan's WhatsApp number is +\$me."
+      echo "Now write hello to this number from your phone (+\$num)."
+      echo "Mastan never writes first, so the first message must come from you."
+      return 0
+    fi
+    if [ "\$state" = stopped ]; then
+      echo "WhatsApp stopped: \$problem. Run 'sudo mastan-login whatsapp reset', then try again."; return 1
+    fi
+    if [ -s "\$WA/qr.txt" ]; then
+      now=\$(cksum < "\$WA/qr.txt")
+      if [ "\$now" != "\$shown" ]; then
+        shown=\$now
+        printf '\033[2J\033[H'
+        echo "On the phone with Mastan's number, open WhatsApp:"
+        echo "Settings > Linked devices > Link a device, then scan this code."
+        echo
+        qrencode -t ANSIUTF8 -m 2 < "\$WA/qr.txt"
+        echo "The code changes every 20 seconds or so. Waiting for the scan... (Ctrl+C to stop)"
+      fi
+    fi
+    sleep 2
+  done
+  echo "No scan after 5 minutes. Run 'sudo mastan-login whatsapp' to try again."; return 1
+}
+
 case "\${1:-}" in
   claude)
     echo "Sign in with your own Claude account. Open the link it shows, approve, and paste the code back here if asked."
@@ -337,11 +412,13 @@ case "\${1:-}" in
     echo "Sign in with your own ChatGPT account. Open the link it shows and enter the code."
     if as_mastan "\$B/codex" login --help 2>&1 | grep -q -- --device-auth; then as_mastan "\$B/codex" login --device-auth
     else as_mastan "\$B/codex" login; fi ;;
+  whatsapp)
+    shift; whatsapp "\$@"; exit \$? ;;
   status)
     as_mastan "\$B/claude" auth status 2>/dev/null || echo "Claude: run 'mastan-login claude' if Mastan does not answer."
     as_mastan "\$B/codex" login status 2>/dev/null || echo "Codex: not signed in."
     exit 0 ;;
-  *) echo "Usage: mastan-login claude | codex | status"; exit 1 ;;
+  *) echo "Usage: mastan-login claude | codex | whatsapp | status"; exit 1 ;;
 esac
 systemctl restart $SVC 2>/dev/null || true
 EOF
@@ -385,10 +462,13 @@ next_steps() {
   if ! logged_in codex; then
     printf '\n %s. Connect your ChatGPT subscription (for coding tasks). Paste this:\n\n      mastan-login codex\n' "$n"; n=$((n + 1))
   fi
-  if [ -z "$TOKEN" ]; then
-    printf '\n %s. Add Telegram: run the installer again and paste your bot token and ID.\n' "$n"; n=$((n + 1))
+  if [ -z "$(env_get WHATSAPP_ALLOW)" ]; then
+    printf '\n %s. Talk to Mastan on WhatsApp (it needs a second WhatsApp number). Paste this:\n\n      mastan-login whatsapp\n' "$n"; n=$((n + 1))
   fi
-  printf '\n %s. Open your bot in Telegram and say hello.\n' "$n"
+  if [ -z "$TOKEN" ]; then
+    printf '\n %s. Want Telegram as well or instead? Run the installer again and paste your bot token and ID.\n' "$n"; n=$((n + 1))
+  fi
+  printf '\n %s. Say hello to Mastan on WhatsApp or Telegram.\n' "$n"
   printf '\n Problems? See what Mastan is doing:  journalctl -u %s -f\n\n' "$SVC"
 }
 

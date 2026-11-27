@@ -11,7 +11,7 @@ Use a reminder to say something at a time: a payment, renewal, call or follow-up
 
 1. Collect the text and an absolute local date and time, or the repeat. Ask only about a date that is really unclear ("next Friday" late on a Thursday, a time that could be morning or evening).
 2. List first, so you do not create a duplicate.
-3. Write the reminder text the way Owner should read it when it fires, in Owner's language, with the context he will need then. A plain reminder posts this text as is, with no model or tools.
+3. Write the reminder text the way Owner should read it when it fires, in Owner's language, with the context needed then. A plain reminder posts this text as is, with no model or tools.
 4. Run the tool in this turn and read the receipt. Say it is set only after an ok receipt with a future `next_run_local`. Then confirm the weekday, date and local time in one line. A note you wrote is not a reminder.
 5. If the receipt is not ok, say plainly that the reminder is not set. To change a time, add the new one and delete the old one, then confirm both.
 

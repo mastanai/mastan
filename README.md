@@ -134,7 +134,7 @@ You can have both WhatsApp and Telegram. Add the second one any time:
 - WhatsApp, or linking again: `sudo mastan-login whatsapp`
 - Telegram: `sudo mastan-login telegram`
 
-What works on WhatsApp today: chatting, files you send it, and files it makes for you. Not yet on WhatsApp: background tasks and schedules ("remind me at 9"). For those, use Telegram.
+What works on WhatsApp today: chatting and reading files you send it. Files Mastan makes are not tested on WhatsApp yet. Not yet on WhatsApp: background tasks and schedules ("remind me at 9"). For those, use Telegram.
 
 ## Honest notes
 
